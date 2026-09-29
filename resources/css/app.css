@@ -1,0 +1,223 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/*
+|--------------------------------------------------------------------------
+| STYLEHUB ADMIN DESIGN SYSTEM
+|--------------------------------------------------------------------------
+|
+| Shared design tokens for the StyleHub web administrator dashboard.
+| The existing StyleHub dark navy + gold theme is preserved.
+|
+*/
+
+:root {
+    /*
+    |--------------------------------------------------------------------------
+    | Brand
+    |--------------------------------------------------------------------------
+    */
+
+    --sh-primary: #17202a;
+    --sh-primary-2: #222d3a;
+    --sh-primary-3: #344254;
+
+    --sh-accent: #d69a2d;
+    --sh-accent-soft: #fff6e5;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Background / Surfaces
+    |--------------------------------------------------------------------------
+    */
+
+    --sh-bg: #f5f7fa;
+
+    --sh-surface: #ffffff;
+
+    --sh-surface-muted: #f8fafc;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Borders
+    |--------------------------------------------------------------------------
+    */
+
+    --sh-border: #e3e8ef;
+
+    --sh-border-strong: #d7dee7;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Text
+    |--------------------------------------------------------------------------
+    */
+
+    --sh-text: #1f2937;
+
+    --sh-text-2: #4b5563;
+
+    --sh-text-3: #7b8491;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Status Colors
+    |--------------------------------------------------------------------------
+    */
+
+    --sh-success: #287558;
+    --sh-success-bg: #edf9f3;
+
+    --sh-warning: #9a671f;
+    --sh-warning-bg: #fff6e5;
+
+    --sh-danger: #a94f4f;
+    --sh-danger-bg: #fff0f0;
+
+    --sh-info: #315fc4;
+    --sh-info-bg: #eef4ff;
+
+    --sh-purple: #7555c7;
+    --sh-purple-bg: #f3efff;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Border Radius
+    |--------------------------------------------------------------------------
+    */
+
+    --sh-radius-sm: 9px;
+
+    --sh-radius-md: 12px;
+
+    --sh-radius-lg: 16px;
+
+    --sh-radius-xl: 20px;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Shadows
+    |--------------------------------------------------------------------------
+    */
+
+    --sh-shadow-sm:
+        0 1px 2px rgba(15, 23, 42, 0.03),
+        0 1px 8px rgba(15, 23, 42, 0.025);
+
+    --sh-shadow-card:
+        0 10px 30px rgba(15, 23, 42, 0.05);
+
+    --sh-shadow-float:
+        0 20px 55px rgba(15, 23, 42, 0.16);
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| DOCUMENT
+|--------------------------------------------------------------------------
+*/
+
+html,
+body,
+#app {
+    min-width: 100%;
+    min-height: 100%;
+    margin: 0;
+}
+
+html {
+    background: var(--sh-bg);
+}
+
+body {
+    margin: 0;
+
+    background:
+        var(--sh-bg);
+
+    color:
+        var(--sh-text);
+
+    font-family:
+        'Instrument Sans',
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        sans-serif;
+
+    font-size: 14px;
+
+    -webkit-font-smoothing: antialiased;
+
+    text-rendering: optimizeLegibility;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| FORM / CONTROL FONT
+|--------------------------------------------------------------------------
+*/
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| MOBILE TAP BEHAVIOR
+|--------------------------------------------------------------------------
+*/
+
+button,
+a,
+input,
+select,
+textarea {
+    -webkit-tap-highlight-color: transparent;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| ACCESSIBLE FOCUS
+|--------------------------------------------------------------------------
+*/
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline:
+        2px solid rgba(214, 154, 45, 0.42);
+
+    outline-offset:
+        2px;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SELECTION
+|--------------------------------------------------------------------------
+*/
+
+::selection {
+    background:
+        rgba(214, 154, 45, 0.22);
+}
