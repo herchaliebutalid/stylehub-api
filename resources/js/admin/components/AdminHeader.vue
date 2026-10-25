@@ -235,34 +235,14 @@ async function logout() {
             </button>
 
             <div class="page-heading">
-                <div class="breadcrumb-row">
-                    <span class="breadcrumb-home">
-                        Admin
-                    </span>
-
-                    <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                        class="breadcrumb-arrow"
-                    >
-                        <path
-                            d="M9 18l6-6-6-6"
-                        />
-                    </svg>
-
-                    <span class="breadcrumb-section">
-                        {{ sectionLabel }}
-                    </span>
-                </div>
+                
 
                 <div class="title-row">
                     <h1>
                         {{ props.title }}
                     </h1>
-
-                    <span class="page-indicator">
-                        Live
-                    </span>
+                    
+                    
                 </div>
 
                 <p class="page-description">
@@ -277,21 +257,7 @@ async function logout() {
              ============================================================ -->
 
         <div class="header-actions">
-            <!-- SYSTEM STATUS -->
-
-            <div class="system-status">
-                <span class="status-dot" />
-
-                <div class="status-copy">
-                    <span class="status-label">
-                        System
-                    </span>
-
-                    <strong>
-                        Operational
-                    </strong>
-                </div>
-            </div>
+            
 
 
             <!-- DIVIDER -->

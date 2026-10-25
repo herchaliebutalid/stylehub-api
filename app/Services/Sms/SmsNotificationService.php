@@ -92,7 +92,7 @@ class SmsNotificationService
                     SmsNotificationStatus::Skipped;
 
                 $notification->provider =
-                    'semaphore';
+                    'textbee';
 
                 $notification->last_error =
                     'Recipient Philippine mobile number is invalid or unavailable.';
@@ -134,8 +134,12 @@ class SmsNotificationService
             $notification->status =
                 SmsNotificationStatus::Pending;
 
+            /*
+             * New pending notifications use TextBee
+             * to match the active SMS gateway.
+             */
             $notification->provider =
-                'semaphore';
+                'textbee';
 
             $notification->save();
         } catch (QueryException $exception) {

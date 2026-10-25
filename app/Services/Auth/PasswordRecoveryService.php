@@ -7,7 +7,7 @@ use App\Enums\UserStatus;
 use App\Exceptions\Sms\SmsGatewayException;
 use App\Models\PasswordResetCode;
 use App\Models\User;
-use App\Services\Sms\SemaphoreSmsGateway;
+use App\Services\Sms\TextBeeSmsGateway;
 use App\Support\Sms\PhilippineSmsRecipient;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -17,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 class PasswordRecoveryService
 {
     public function __construct(
-        private readonly SemaphoreSmsGateway $smsGateway
+        private readonly TextBeeSmsGateway $smsGateway
     ) {}
 
     /**
@@ -91,7 +91,7 @@ class PasswordRecoveryService
                 |
                 | Route throttling is one layer.
                 |
-                | This is another layer protecting Semaphore credits from repeated
+                | This is another layer protecting SMS usage from repeated
                 | reset requests for the same account.
                 |
                 */
@@ -195,7 +195,7 @@ class PasswordRecoveryService
             | Definite Failure
             |--------------------------------------------------------------------------
             |
-            | Semaphore definitely rejected the request, so keeping this code
+            | TextBee definitely rejected the request, so keeping this code
             | would leave an OTP that the user never received.
             |
             */
@@ -213,7 +213,7 @@ class PasswordRecoveryService
             | Uncertain Failure
             |--------------------------------------------------------------------------
             |
-            | If Semaphore timed out after accepting the SMS, keep the code because
+            | If TextBee timed out after accepting the SMS, keep the code because
             | the SMS may still arrive.
             |
             */

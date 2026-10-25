@@ -114,6 +114,14 @@ class AdminFeedbackResource extends JsonResource
             |
             | Feedback is tied to the completed booking that produced it.
             |
+            | Database columns:
+            |   appointment_date
+            |   starts_at
+            |   ends_at
+            |
+            | The admin frontend expects start_time, so the API
+            | keeps that response field while reading starts_at.
+            |
             */
 
             'appointment' =>
@@ -137,7 +145,7 @@ class AdminFeedbackResource extends JsonResource
                         'start_time' =>
                             $this->stringValue(
                                 $appointment
-                                    ->start_time
+                                    ->starts_at
                             ),
                     ],
 

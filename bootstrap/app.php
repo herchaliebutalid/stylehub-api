@@ -1,5 +1,7 @@
+
 <?php
 
+use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureShopOwnerHasApprovedShop;
 use App\Http\Middleware\EnsureUserIsAdmin;
@@ -115,6 +117,20 @@ return Application::configure(
         function (
             Middleware $middleware
         ): void {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Security Headers
+            |--------------------------------------------------------------------------
+            |
+            | Apply security response headers to StyleHub.
+            | Admin iframe restrictions are limited to admin pages.
+            |
+            */
+
+            $middleware->append(
+                AddSecurityHeaders::class
+            );
 
             /*
             |--------------------------------------------------------------------------

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\ShopOwner;
 
+use App\Enums\AppointmentStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\ShopOwner\CancelAppointmentRequest;
 use App\Http\Requests\Api\V1\ShopOwner\DeclineAppointmentRequest;
@@ -10,6 +11,7 @@ use App\Models\Shop;
 use App\Services\Appointments\ShopOwnerAppointmentWorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class AppointmentController extends Controller
 {
@@ -17,44 +19,157 @@ class AppointmentController extends Controller
         private readonly ShopOwnerAppointmentWorkflowService $workflow
     ) {}
 
-    public function index(
-        Request $request
-    ): JsonResponse {
-        $shop =
-            $this->authenticatedShop(
-                $request
+    /**
+     * List appointments belonging to the shop owner's shop.
+     *
+     * Existing mobile requests retain their original response.
+     *
+     * Paginated requests:
+     * ?page=1&per_page=20
+     *
+     * Optional status filtering:
+     * ?page=1&per_page=20&status=pending
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'page' => [
+                'sometimes',
+                'integer',
+                'min:1',
+            ],
+            'per_page' => [
+                'sometimes',
+                'integer',
+                'between:1,100',
+            ],
+            'status' => [
+                'sometimes',
+                'string',
+                Rule::enum(AppointmentStatus::class),
+            ],
+        ]);
+
+        $shop = $this->authenticatedShop(
+            $request
+        );
+
+        $query = $shop
+            ->appointments()
+            ->with([
+                'customer',
+                'service',
+            ])
+            ->orderByDesc('appointment_date')
+            ->orderByDesc('starts_at')
+            ->orderByDesc('id');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Backward Compatibility
+        |--------------------------------------------------------------------------
+        */
+
+        if (! $request->hasAny([
+            'page',
+            'per_page',
+            'status',
+        ])) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'appointments' =>
+                        ShopOwnerAppointmentResource::collection(
+                            $query->get()
+                        )->resolve($request),
+                ],
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Status Filtering
+        |--------------------------------------------------------------------------
+        */
+
+        if (isset($validated['status'])) {
+            $query->where(
+                'status',
+                $validated['status']
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
+
+        $appointments = $query->paginate(
+            (int) ($validated['per_page'] ?? 20)
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Accurate Shop Appointment Counts
+        |--------------------------------------------------------------------------
+        */
+
+        $counts = $shop
+            ->appointments()
+            ->toBase()
+            ->select('status')
+            ->selectRaw('COUNT(*) AS total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $summary = [
+            'total' => 0,
+        ];
+
+        foreach (AppointmentStatus::cases() as $status) {
+            $summary[$status->value] = (int) (
+                $counts[$status->value] ?? 0
             );
 
-        $appointments =
-            $shop
-                ->appointments()
-                ->with([
-                    'customer',
-                    'service',
-                ])
-                ->orderByDesc(
-                    'appointment_date'
-                )
-                ->orderByDesc(
-                    'starts_at'
-                )
-                ->get();
+            $summary['total'] +=
+                $summary[$status->value];
+        }
 
         return response()->json([
-            'success' =>
-                true,
+            'success' => true,
 
             'data' => [
                 'appointments' =>
                     ShopOwnerAppointmentResource::collection(
-                        $appointments
-                    )->resolve(
-                        $request
-                    ),
+                        $appointments->getCollection()
+                    )->resolve($request),
+
+                'summary' => $summary,
+
+                'pagination' => [
+                    'current_page' =>
+                        $appointments->currentPage(),
+
+                    'per_page' =>
+                        $appointments->perPage(),
+
+                    'total' =>
+                        $appointments->total(),
+
+                    'last_page' =>
+                        $appointments->lastPage(),
+
+                    'has_more_pages' =>
+                        $appointments->hasMorePages(),
+                ],
             ],
         ]);
     }
 
+    /**
+     * View appointment details.
+     */
     public function show(
         Request $request,
         string $appointment
@@ -92,6 +207,9 @@ class AppointmentController extends Controller
         ]);
     }
 
+    /**
+     * Confirm a pending appointment.
+     */
     public function confirm(
         Request $request,
         string $appointment
@@ -132,6 +250,9 @@ class AppointmentController extends Controller
         ]);
     }
 
+    /**
+     * Decline an appointment.
+     */
     public function decline(
         DeclineAppointmentRequest $request,
         string $appointment
@@ -177,6 +298,9 @@ class AppointmentController extends Controller
         ]);
     }
 
+    /**
+     * Cancel an appointment.
+     */
     public function cancel(
         CancelAppointmentRequest $request,
         string $appointment
@@ -222,6 +346,9 @@ class AppointmentController extends Controller
         ]);
     }
 
+    /**
+     * Complete an appointment.
+     */
     public function complete(
         Request $request,
         string $appointment
@@ -260,8 +387,7 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Mark a confirmed appointment as No-show
-     * after the appointment start time.
+     * Mark a confirmed appointment as No-show.
      */
     public function noShow(
         Request $request,
@@ -300,6 +426,9 @@ class AppointmentController extends Controller
         ]);
     }
 
+    /**
+     * Return only the shop belonging to the authenticated owner.
+     */
     private function authenticatedShop(
         Request $request
     ): Shop {

@@ -723,11 +723,7 @@ onMounted(() => {
 
         <section class="appointments-intro">
             <div class="appointments-intro-copy">
-                <div class="appointments-intro-label">
-                    <span class="appointments-intro-dot" />
-
-                    Booking operations
-                </div>
+                
 
                 <h2>
                     Appointment monitoring

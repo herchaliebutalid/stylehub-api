@@ -16,25 +16,21 @@ class AdminAppointmentController extends Controller
      * Browse appointments across StyleHub.
      *
      * Administrator web only.
-     *
      * This endpoint is intentionally read-only.
      */
     public function index(
         BrowseAdminAppointmentsRequest $request
     ): JsonResponse {
-        $validated =
-            $request->validated();
+        $validated = $request->validated();
 
-        $query =
-            $this->baseQuery();
+        $query = $this->baseQuery();
 
         /*
         |--------------------------------------------------------------------------
         | Search
         |--------------------------------------------------------------------------
         |
-        | Administrator search is limited to operational information:
-        |
+        | Search by:
         | - Customer name
         | - Customer email
         | - Shop name
@@ -42,36 +38,19 @@ class AdminAppointmentController extends Controller
         |
         */
 
-        if (
-            isset(
-                $validated['search']
-            )
-        ) {
-            $search =
-                $validated['search'];
+        if (isset($validated['search'])) {
+            $search = $validated['search'];
 
             $query->where(
-                function (
-                    Builder $query
-                ) use (
-                    $search
-                ): void {
+                function (Builder $query) use ($search): void {
                     $query
                         ->whereHas(
                             'customer',
-                            function (
-                                Builder $customerQuery
-                            ) use (
-                                $search
-                            ): void {
+                            function (Builder $customerQuery) use ($search): void {
                                 $customerQuery
                                     ->withTrashed()
                                     ->where(
-                                        function (
-                                            Builder $customerQuery
-                                        ) use (
-                                            $search
-                                        ): void {
+                                        function (Builder $customerQuery) use ($search): void {
                                             $customerQuery
                                                 ->where(
                                                     'first_name',
@@ -99,11 +78,7 @@ class AdminAppointmentController extends Controller
                         )
                         ->orWhereHas(
                             'shop',
-                            function (
-                                Builder $shopQuery
-                            ) use (
-                                $search
-                            ): void {
+                            function (Builder $shopQuery) use ($search): void {
                                 $shopQuery
                                     ->withTrashed()
                                     ->where(
@@ -115,11 +90,7 @@ class AdminAppointmentController extends Controller
                         )
                         ->orWhereHas(
                             'service',
-                            function (
-                                Builder $serviceQuery
-                            ) use (
-                                $search
-                            ): void {
+                            function (Builder $serviceQuery) use ($search): void {
                                 $serviceQuery
                                     ->withTrashed()
                                     ->where(
@@ -135,15 +106,11 @@ class AdminAppointmentController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Status Filter
+        | Appointment Status Filter
         |--------------------------------------------------------------------------
         */
 
-        if (
-            isset(
-                $validated['status']
-            )
-        ) {
+        if (isset($validated['status'])) {
             $query->where(
                 'status',
                 $validated['status']
@@ -156,11 +123,7 @@ class AdminAppointmentController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        if (
-            isset(
-                $validated['shop_id']
-            )
-        ) {
+        if (isset($validated['shop_id'])) {
             $query->where(
                 'shop_id',
                 $validated['shop_id']
@@ -173,11 +136,7 @@ class AdminAppointmentController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        if (
-            isset(
-                $validated['customer_id']
-            )
-        ) {
+        if (isset($validated['customer_id'])) {
             $query->where(
                 'customer_id',
                 $validated['customer_id']
@@ -190,11 +149,7 @@ class AdminAppointmentController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        if (
-            isset(
-                $validated['date_from']
-            )
-        ) {
+        if (isset($validated['date_from'])) {
             $query->whereDate(
                 'appointment_date',
                 '>=',
@@ -202,11 +157,7 @@ class AdminAppointmentController extends Controller
             );
         }
 
-        if (
-            isset(
-                $validated['date_to']
-            )
-        ) {
+        if (isset($validated['date_to'])) {
             $query->whereDate(
                 'appointment_date',
                 '<=',
@@ -216,44 +167,50 @@ class AdminAppointmentController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Pagination
+        | Pagination and Sorting
         |--------------------------------------------------------------------------
+        |
+        | FIX:
+        |
+        | The appointments database table has:
+        |   appointment_date
+        |   starts_at
+        |   ends_at
+        |
+        | It does NOT have a start_time column.
+        |
+        | Use starts_at when sorting appointments.
+        |
         */
 
-        $perPage =
-            (int) (
-                $validated['per_page']
-                ?? 20
-            );
+        $perPage = (int) (
+            $validated['per_page'] ?? 20
+        );
 
-        $appointments =
-            $query
-                ->orderByDesc(
-                    'appointment_date'
-                )
-                ->orderByDesc(
-                    'start_time'
-                )
-                ->orderByDesc(
-                    'id'
-                )
-                ->paginate(
-                    $perPage
-                );
+        $appointments = $query
+            ->orderByDesc('appointment_date')
+            ->orderByDesc('starts_at')
+            ->orderByDesc('id')
+            ->paginate($perPage);
+
+        /*
+        |--------------------------------------------------------------------------
+        | API Response
+        |--------------------------------------------------------------------------
+        |
+        | Keep the existing response structure so the
+        | Admin Vue application continues working.
+        |
+        */
 
         return response()->json([
-            'success' =>
-                true,
+            'success' => true,
 
             'data' => [
                 'appointments' =>
                     AdminAppointmentResource::collection(
-                        collect(
-                            $appointments->items()
-                        )
-                    )->resolve(
-                        $request
-                    ),
+                        collect($appointments->items())
+                    )->resolve($request),
 
                 'pagination' => [
                     'current_page' =>
@@ -276,55 +233,41 @@ class AdminAppointmentController extends Controller
     }
 
     /**
-     * View one appointment.
+     * View the details of one appointment.
      *
      * Administrator web only.
-     *
-     * This endpoint does not provide any appointment mutation.
+     * Read-only endpoint.
      */
     public function show(
         Request $request,
         string $appointment
     ): JsonResponse {
-        $appointmentModel =
-            $this
-                ->baseQuery()
-                ->whereKey(
-                    $appointment
-                )
-                ->firstOrFail();
+        $appointmentModel = $this
+            ->baseQuery()
+            ->whereKey($appointment)
+            ->firstOrFail();
 
         return response()->json([
-            'success' =>
-                true,
+            'success' => true,
 
             'data' => [
                 'appointment' =>
-                    (
-                        new AdminAppointmentResource(
-                            $appointmentModel
-                        )
-                    )->resolve(
-                        $request
-                    ),
+                    (new AdminAppointmentResource(
+                        $appointmentModel
+                    ))->resolve($request),
             ],
         ]);
     }
 
     /**
-     * Build the Administrator appointment monitoring query.
+     * Build the Admin appointment monitoring query.
      *
-     * Related Customer, Shop and Service models are loaded with
-     * soft-deleted records when available so historical appointment
-     * records remain meaningful to the Administrator.
+     * Historical customer, shop and service records
+     * are included even when soft-deleted.
      *
-     * IMPORTANT:
-     *
-     * Eager-loading constraint callbacks intentionally do not type-hint
-     * Illuminate\Database\Eloquent\Builder.
-     *
-     * Laravel passes the underlying relationship object, such as
-     * BelongsTo, into these callbacks.
+     * Keep eager-loading callbacks without Builder
+     * type hints because Laravel passes relationship
+     * query objects into these callbacks.
      *
      * @return Builder<Appointment>
      */
@@ -332,29 +275,17 @@ class AdminAppointmentController extends Controller
     {
         return Appointment::query()
             ->with([
-                'customer' =>
-                    function (
-                        $query
-                    ): void {
-                        $query
-                            ->withTrashed();
-                    },
+                'customer' => function ($query): void {
+                    $query->withTrashed();
+                },
 
-                'shop' =>
-                    function (
-                        $query
-                    ): void {
-                        $query
-                            ->withTrashed();
-                    },
+                'shop' => function ($query): void {
+                    $query->withTrashed();
+                },
 
-                'service' =>
-                    function (
-                        $query
-                    ): void {
-                        $query
-                            ->withTrashed();
-                    },
+                'service' => function ($query): void {
+                    $query->withTrashed();
+                },
             ])
             ->withCount([
                 'rescheduleRequests',

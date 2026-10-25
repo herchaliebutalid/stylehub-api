@@ -12,7 +12,7 @@ use App\Models\Service;
 use App\Models\Shop;
 use App\Models\SmsNotification;
 use App\Models\User;
-use App\Services\Sms\SemaphoreSmsGateway;
+use App\Services\Sms\TextBeeSmsGateway;
 use App\Support\AppointmentReminderKey;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,23 +29,12 @@ class SmsReminderRecoveryTest extends TestCase
         parent::setUp();
 
         config([
-            'app.timezone' =>
-                'Asia/Manila',
-
-            'sms.enabled' =>
-                false,
-
-            'sms.reminders.lead_minutes' =>
-                1440,
-
-            'sms.reminders.minimum_lead_minutes' =>
-                60,
-
-            'sms.recovery.pending_after_minutes' =>
-                5,
-
-            'sms.recovery.processing_after_minutes' =>
-                10,
+            'app.timezone' => 'Asia/Manila',
+            'sms.enabled' => false,
+            'sms.reminders.lead_minutes' => 1440,
+            'sms.reminders.minimum_lead_minutes' => 60,
+            'sms.recovery.pending_after_minutes' => 5,
+            'sms.recovery.processing_after_minutes' => 10,
         ]);
 
         CarbonImmutable::setTestNow(
@@ -67,30 +56,22 @@ class SmsReminderRecoveryTest extends TestCase
     {
         Queue::fake();
 
-        $appointment =
-            $this->appointment(
-                status:
-                    AppointmentStatus::Confirmed,
-
-                date:
-                    '2026-08-22',
-
-                startsAt:
-                    '07:30:00',
-            );
+        $appointment = $this->appointment(
+            status: AppointmentStatus::Confirmed,
+            date: '2026-08-22',
+            startsAt: '07:30:00',
+        );
 
         $this->artisan(
             'stylehub:sms:queue-reminders'
         )->assertSuccessful();
 
-        $notification =
-            SmsNotification::query()
-                ->where(
-                    'type',
-                    SmsNotificationType::AppointmentReminder
-                        ->value
-                )
-                ->firstOrFail();
+        $notification = SmsNotification::query()
+            ->where(
+                'type',
+                SmsNotificationType::AppointmentReminder->value
+            )
+            ->firstOrFail();
 
         $this->assertSame(
             $appointment->id,
@@ -103,9 +84,7 @@ class SmsReminderRecoveryTest extends TestCase
         );
 
         $this->assertSame(
-            AppointmentReminderKey::for(
-                $appointment
-            ),
+            AppointmentReminderKey::for($appointment),
             $notification->dedupe_key
         );
 
@@ -120,14 +99,9 @@ class SmsReminderRecoveryTest extends TestCase
         Queue::fake();
 
         $this->appointment(
-            status:
-                AppointmentStatus::Confirmed,
-
-            date:
-                '2026-08-22',
-
-            startsAt:
-                '07:30:00',
+            status: AppointmentStatus::Confirmed,
+            date: '2026-08-22',
+            startsAt: '07:30:00',
         );
 
         $this->artisan(
@@ -154,14 +128,9 @@ class SmsReminderRecoveryTest extends TestCase
         Queue::fake();
 
         $this->appointment(
-            status:
-                AppointmentStatus::Confirmed,
-
-            date:
-                '2026-08-22',
-
-            startsAt:
-                '09:30:00',
+            status: AppointmentStatus::Confirmed,
+            date: '2026-08-22',
+            startsAt: '09:30:00',
         );
 
         $this->artisan(
@@ -181,14 +150,9 @@ class SmsReminderRecoveryTest extends TestCase
         Queue::fake();
 
         $this->appointment(
-            status:
-                AppointmentStatus::Confirmed,
-
-            date:
-                '2026-08-21',
-
-            startsAt:
-                '08:30:00',
+            status: AppointmentStatus::Confirmed,
+            date: '2026-08-21',
+            startsAt: '08:30:00',
         );
 
         $this->artisan(
@@ -208,14 +172,9 @@ class SmsReminderRecoveryTest extends TestCase
         Queue::fake();
 
         $this->appointment(
-            status:
-                AppointmentStatus::Pending,
-
-            date:
-                '2026-08-22',
-
-            startsAt:
-                '07:30:00',
+            status: AppointmentStatus::Pending,
+            date: '2026-08-22',
+            startsAt: '07:30:00',
         );
 
         $this->artisan(
@@ -232,41 +191,29 @@ class SmsReminderRecoveryTest extends TestCase
     {
         Queue::fake();
 
-        $appointment =
-            $this->appointment(
-                status:
-                    AppointmentStatus::Confirmed,
-
-                date:
-                    '2026-08-22',
-
-                startsAt:
-                    '07:30:00',
-            );
+        $appointment = $this->appointment(
+            status: AppointmentStatus::Confirmed,
+            date: '2026-08-22',
+            startsAt: '07:30:00',
+        );
 
         $this->artisan(
             'stylehub:sms:queue-reminders'
         )->assertSuccessful();
 
-        $firstKey =
-            AppointmentReminderKey::for(
-                $appointment
-            );
+        $firstKey = AppointmentReminderKey::for(
+            $appointment
+        );
 
-        $appointment->starts_at =
-            '07:45:00';
-
-        $appointment->ends_at =
-            '08:45:00';
+        $appointment->starts_at = '07:45:00';
+        $appointment->ends_at = '08:45:00';
 
         $appointment->saveQuietly();
-
         $appointment->refresh();
 
-        $secondKey =
-            AppointmentReminderKey::for(
-                $appointment
-            );
+        $secondKey = AppointmentReminderKey::for(
+            $appointment
+        );
 
         $this->assertNotSame(
             $firstKey,
@@ -286,66 +233,50 @@ class SmsReminderRecoveryTest extends TestCase
     public function test_old_reminder_is_skipped_if_schedule_changed_before_job_runs(): void
     {
         config([
-            'sms.enabled' =>
-                true,
+            'sms.enabled' => true,
         ]);
 
         Http::fake();
 
-        $appointment =
-            $this->appointment(
-                status:
-                    AppointmentStatus::Confirmed,
+        $appointment = $this->appointment(
+            status: AppointmentStatus::Confirmed,
+            date: '2026-08-22',
+            startsAt: '07:30:00',
+        );
 
-                date:
-                    '2026-08-22',
+        $oldKey = AppointmentReminderKey::for(
+            $appointment
+        );
 
-                startsAt:
-                    '07:30:00',
-            );
+        $notification = SmsNotification::factory()
+            ->create([
+                'user_id' => $appointment->customer_id,
+                'appointment_id' => $appointment->id,
+                'type' => SmsNotificationType::AppointmentReminder,
+                'status' => SmsNotificationStatus::Pending,
+                'dedupe_key' => $oldKey,
+            ]);
 
-        $oldKey =
-            AppointmentReminderKey::for(
-                $appointment
-            );
-
-        $notification =
-            SmsNotification::factory()
-                ->create([
-                    'user_id' =>
-                        $appointment->customer_id,
-
-                    'appointment_id' =>
-                        $appointment->id,
-
-                    'type' =>
-                        SmsNotificationType::AppointmentReminder,
-
-                    'status' =>
-                        SmsNotificationStatus::Pending,
-
-                    'dedupe_key' =>
-                        $oldKey,
-                ]);
-
-        $appointment->starts_at =
-            '07:45:00';
-
-        $appointment->ends_at =
-            '08:45:00';
+        $appointment->starts_at = '07:45:00';
+        $appointment->ends_at = '08:45:00';
 
         $appointment->saveQuietly();
 
-        (
-            new SendSmsNotification(
-                $notification->id
-            )
-        )->handle(
-            new SemaphoreSmsGateway()
+        /*
+         * The production SMS job now depends on
+         * TextBeeSmsGateway, not SemaphoreSmsGateway.
+         *
+         * This test verifies that stale messages
+         * are skipped before any provider request.
+         */
+
+        (new SendSmsNotification(
+            $notification->id
+        ))->handle(
+            new TextBeeSmsGateway()
         );
 
-        $updated =
-            $notification->fresh();
+        $updated = $notification->fresh();
 
         $this->assertSame(
             SmsNotificationStatus::Skipped,
@@ -364,21 +295,14 @@ class SmsReminderRecoveryTest extends TestCase
     {
         Queue::fake();
 
-        $notification =
-            SmsNotification::factory()
-                ->create([
-                    'status' =>
-                        SmsNotificationStatus::Pending,
-                ]);
+        $notification = SmsNotification::factory()
+            ->create([
+                'status' => SmsNotificationStatus::Pending,
+            ]);
 
         $notification->forceFill([
-            'created_at' =>
-                now()
-                    ->subMinutes(10),
-
-            'updated_at' =>
-                now()
-                    ->subMinutes(10),
+            'created_at' => now()->subMinutes(10),
+            'updated_at' => now()->subMinutes(10),
         ])->saveQuietly();
 
         $this->artisan(
@@ -387,18 +311,13 @@ class SmsReminderRecoveryTest extends TestCase
 
         Queue::assertPushed(
             SendSmsNotification::class,
-            fn (
-                SendSmsNotification $job
-            ): bool =>
-                $job->smsNotificationId
-                === $notification->id
+            fn (SendSmsNotification $job): bool =>
+                $job->smsNotificationId === $notification->id
         );
 
         $this->assertSame(
             SmsNotificationStatus::Pending,
-            $notification
-                ->fresh()
-                ->status
+            $notification->fresh()->status
         );
     }
 
@@ -406,26 +325,18 @@ class SmsReminderRecoveryTest extends TestCase
     {
         Queue::fake();
 
-        $notification =
-            SmsNotification::factory()
-                ->create([
-                    'status' =>
-                        SmsNotificationStatus::Processing,
-
-                    'attempts' =>
-                        1,
-
-                    'last_attempt_at' =>
-                        now()
-                            ->subMinutes(20),
-                ]);
+        $notification = SmsNotification::factory()
+            ->create([
+                'status' => SmsNotificationStatus::Processing,
+                'attempts' => 1,
+                'last_attempt_at' => now()->subMinutes(20),
+            ]);
 
         $this->artisan(
             'stylehub:sms:recover'
         )->assertSuccessful();
 
-        $updated =
-            $notification->fresh();
+        $updated = $notification->fresh();
 
         $this->assertSame(
             SmsNotificationStatus::Failed,
@@ -444,21 +355,18 @@ class SmsReminderRecoveryTest extends TestCase
     {
         Queue::fake();
 
-        $notification =
-            SmsNotification::factory()
-                ->failed()
-                ->create();
+        $notification = SmsNotification::factory()
+            ->failed()
+            ->create();
 
         $this->artisan(
             'stylehub:sms:retry',
             [
-                'notification' =>
-                    $notification->id,
+                'notification' => $notification->id,
             ]
         )->assertSuccessful();
 
-        $updated =
-            $notification->fresh();
+        $updated = $notification->fresh();
 
         $this->assertSame(
             SmsNotificationStatus::Pending,
@@ -474,7 +382,7 @@ class SmsReminderRecoveryTest extends TestCase
         );
 
         /*
-         * Historical attempt counter is retained.
+         * Historical attempt count is preserved.
          */
         $this->assertSame(
             1,
@@ -483,11 +391,8 @@ class SmsReminderRecoveryTest extends TestCase
 
         Queue::assertPushed(
             SendSmsNotification::class,
-            fn (
-                SendSmsNotification $job
-            ): bool =>
-                $job->smsNotificationId
-                === $notification->id
+            fn (SendSmsNotification $job): bool =>
+                $job->smsNotificationId === $notification->id
         );
     }
 
@@ -495,23 +400,18 @@ class SmsReminderRecoveryTest extends TestCase
     {
         Queue::fake();
 
-        $notification =
-            SmsNotification::factory()
-                ->uncertainFailure()
-                ->create();
+        $notification = SmsNotification::factory()
+            ->uncertainFailure()
+            ->create();
 
         $this->artisan(
             'stylehub:sms:retry',
             [
-                'notification' =>
-                    $notification->id,
+                'notification' => $notification->id,
             ]
-        )->assertExitCode(
-            1
-        );
+        )->assertExitCode(1);
 
-        $updated =
-            $notification->fresh();
+        $updated = $notification->fresh();
 
         $this->assertSame(
             SmsNotificationStatus::Failed,
@@ -526,96 +426,63 @@ class SmsReminderRecoveryTest extends TestCase
         Queue::assertNothingPushed();
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Test Appointment Factory Helper
+    |--------------------------------------------------------------------------
+    */
+
     private function appointment(
         AppointmentStatus $status,
         string $date,
         string $startsAt
     ): Appointment {
-        $customer =
-            User::factory()
-                ->customer()
-                ->create([
-                    'phone_number' =>
-                        '09171234567',
-                ]);
+        $customer = User::factory()
+            ->customer()
+            ->create([
+                'phone_number' => '09171234567',
+            ]);
 
-        $owner =
-            User::factory()
-                ->shopOwner()
-                ->create();
+        $owner = User::factory()
+            ->shopOwner()
+            ->create();
 
-        $shop =
-            Shop::factory()
-                ->approved()
-                ->create([
-                    'owner_id' =>
-                        $owner->id,
-                ]);
+        $shop = Shop::factory()
+            ->approved()
+            ->create([
+                'owner_id' => $owner->id,
+            ]);
 
-        $service =
-            Service::factory()
-                ->create([
-                    'shop_id' =>
-                        $shop->id,
+        $service = Service::factory()
+            ->create([
+                'shop_id' => $shop->id,
+                'name' => 'Premium Haircut',
+                'price' => '500.00',
+                'duration_minutes' => 60,
+                'is_active' => true,
+            ]);
 
-                    'name' =>
-                        'Premium Haircut',
-
-                    'price' =>
-                        '500.00',
-
-                    'duration_minutes' =>
-                        60,
-
-                    'is_active' =>
-                        true,
-                ]);
-
-        $end =
-            CarbonImmutable::parse(
-                $date
-                .' '
-                .$startsAt,
-                'Asia/Manila'
-            )
-                ->addMinutes(60)
-                ->format(
-                    'H:i:s'
-                );
+        $end = CarbonImmutable::parse(
+            $date . ' ' . $startsAt,
+            'Asia/Manila'
+        )
+            ->addMinutes(60)
+            ->format('H:i:s');
 
         return Appointment::withoutEvents(
             fn (): Appointment =>
                 Appointment::factory()
                     ->create([
-                        'customer_id' =>
-                            $customer->id,
-
-                        'shop_id' =>
-                            $shop->id,
-
-                        'service_id' =>
-                            $service->id,
-
-                        'appointment_date' =>
-                            $date,
-
-                        'starts_at' =>
-                            $startsAt,
-
-                        'ends_at' =>
-                            $end,
-
-                        'service_name' =>
-                            $service->name,
-
-                        'price_snapshot' =>
-                            $service->price,
-
-                        'duration_minutes_snapshot' =>
-                            60,
-
-                        'status' =>
-                            $status,
+                        'customer_id' => $customer->id,
+                        'shop_id' => $shop->id,
+                        'service_id' => $service->id,
+                        'appointment_date' => $date,
+                        'starts_at' => $startsAt,
+                        'ends_at' => $end,
+                        'service_name' => $service->name,
+                        'price_snapshot' => $service->price,
+                        'duration_minutes_snapshot' => 60,
+                        'status' => $status,
                     ])
         );
     }

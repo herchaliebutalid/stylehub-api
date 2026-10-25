@@ -7,12 +7,12 @@ use App\Enums\SmsNotificationStatus;
 use App\Enums\SmsNotificationType;
 use App\Exceptions\Sms\SmsGatewayException;
 use App\Models\SmsNotification;
-use App\Services\Sms\SemaphoreSmsGateway;
+use App\Services\Sms\TextBeeSmsGateway;
 use App\Support\Sms\PhilippineSmsRecipient;
 use Illuminate\Console\Command;
 use Throwable;
 
-class SendSemaphoreTestSms extends Command
+class SendTextBeeTestSms extends Command
 {
     protected $signature =
         'stylehub:sms:test
@@ -20,18 +20,18 @@ class SendSemaphoreTestSms extends Command
         {--yes : Skip interactive confirmation. Intended for automated tests only.}';
 
     protected $description =
-        'Send exactly one controlled real SMS through Semaphore for StyleHub verification.';
+        'Send exactly one controlled real SMS through TextBee for StyleHub verification.';
 
     public function handle(
-        SemaphoreSmsGateway $gateway
+        TextBeeSmsGateway $gateway
     ): int {
         /*
         |--------------------------------------------------------------------------
         | Safety Gate #1
         |--------------------------------------------------------------------------
         |
-        | Normal application SMS MUST remain disabled while performing
-        | this isolated verification.
+        | Normal StyleHub SMS must remain disabled while performing
+        | this isolated real-world SMS verification.
         |
         */
 
@@ -73,13 +73,13 @@ class SendSemaphoreTestSms extends Command
 
         /*
         |--------------------------------------------------------------------------
-        | Configuration
+        | TextBee Configuration
         |--------------------------------------------------------------------------
         */
 
         $apiKey =
             config(
-                'sms.semaphore.api_key'
+                'sms.textbee.api_key'
             );
 
         if (
@@ -87,7 +87,23 @@ class SendSemaphoreTestSms extends Command
             || trim($apiKey) === ''
         ) {
             $this->error(
-                'Semaphore API key is not configured.'
+                'TextBee API key is not configured.'
+            );
+
+            return self::FAILURE;
+        }
+
+        $deviceId =
+            config(
+                'sms.textbee.device_id'
+            );
+
+        if (
+            ! is_string($deviceId)
+            || trim($deviceId) === ''
+        ) {
+            $this->error(
+                'TextBee Device ID is not configured.'
             );
 
             return self::FAILURE;
@@ -98,9 +114,9 @@ class SendSemaphoreTestSms extends Command
         | Recipient
         |--------------------------------------------------------------------------
         |
-        | For normal manual use, no number is passed on the command line.
-        | The private prompt prevents the number from being stored in
-        | ordinary PowerShell command history.
+        | During normal manual use, do not pass your phone number on the
+        | command line. The secret prompt keeps it out of normal
+        | PowerShell command history.
         |
         */
 
@@ -211,15 +227,12 @@ class SendSemaphoreTestSms extends Command
 
         /*
         |--------------------------------------------------------------------------
-        | Message
+        | Test Message
         |--------------------------------------------------------------------------
-        |
-        | Do not begin the message with "TEST".
-        |
         */
 
         $message =
-            'StyleHub SMS verification: your Semaphore connection is working. No action is required.';
+            'StyleHub SMS verification: your TextBee connection is working. No action is required.';
 
         $masked =
             PhilippineSmsRecipient::mask(
@@ -266,7 +279,7 @@ class SendSemaphoreTestSms extends Command
 
         /*
         |--------------------------------------------------------------------------
-        | Create Audit Record Before Network Request
+        | Create Audit Record
         |--------------------------------------------------------------------------
         */
 
@@ -292,7 +305,7 @@ class SendSemaphoreTestSms extends Command
             SmsNotificationStatus::Processing;
 
         $notification->provider =
-            'semaphore';
+            'textbee';
 
         $notification->attempts =
             1;
@@ -304,10 +317,10 @@ class SendSemaphoreTestSms extends Command
 
         /*
         |--------------------------------------------------------------------------
-        | Exactly One Semaphore Request
+        | Exactly One TextBee Request
         |--------------------------------------------------------------------------
         |
-        | SemaphoreSmsGateway itself performs no blind HTTP retry.
+        | TextBeeSmsGateway performs no blind automatic HTTP retry.
         |
         */
 
@@ -340,7 +353,7 @@ class SendSemaphoreTestSms extends Command
             $notification->save();
 
             $this->error(
-                'Semaphore test failed.'
+                'TextBee test failed.'
             );
 
             $this->line(
@@ -396,7 +409,7 @@ class SendSemaphoreTestSms extends Command
 
         /*
         |--------------------------------------------------------------------------
-        | Accepted
+        | Accepted By TextBee
         |--------------------------------------------------------------------------
         */
 
@@ -426,7 +439,7 @@ class SendSemaphoreTestSms extends Command
         $this->newLine();
 
         $this->info(
-            'Semaphore accepted the SMS request.'
+            'TextBee accepted the SMS request.'
         );
 
         $this->line(
@@ -435,12 +448,14 @@ class SendSemaphoreTestSms extends Command
 
         $this->line(
             'Provider message ID: '
-            .$notification
-                ->provider_message_id
+            .(
+                $notification->provider_message_id
+                ?: 'Not returned'
+            )
         );
 
         $this->line(
-            'Semaphore status: '
+            'TextBee status: '
             .$notification
                 ->provider_status
         );
@@ -448,7 +463,7 @@ class SendSemaphoreTestSms extends Command
         $this->newLine();
 
         $this->warn(
-            'Accepted by Semaphore does not necessarily mean final handset delivery yet.'
+            'Accepted by TextBee means the request was accepted by the provider. Confirm final delivery on the receiving phone.'
         );
 
         return self::SUCCESS;

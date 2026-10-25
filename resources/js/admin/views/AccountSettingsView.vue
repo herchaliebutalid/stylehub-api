@@ -701,12 +701,7 @@ onMounted(() => {
 
         <section class="account-intro">
             <div class="account-intro-copy">
-                <div class="account-intro-label">
-                    <span class="account-intro-dot" />
-
-                    Administrator account
-                </div>
-
+                
                 <h2>
                     Account settings
                 </h2>
@@ -1759,42 +1754,7 @@ onMounted(() => {
                     </div>
 
 
-                    <div class="protected-status-card">
-                        <div class="protected-status-icon">
-                            <svg
-                                viewBox="0 0 24 24"
-                                aria-hidden="true"
-                            >
-                                <path
-                                    d="M12 3l8 4v5c0 5-3.4 8.2-8 9.5C7.4 20.2 4 17 4 12V7l8-4z"
-                                />
-
-                                <path
-                                    d="M8 12l3 3 5-6"
-                                />
-                            </svg>
-                        </div>
-
-                        <div>
-                            <span>
-                                Administrator access
-                            </span>
-
-                            <strong>
-                                {{
-                                    account.status_label
-                                    ||
-                                    humanize(
-                                        account.status
-                                    )
-                                }}
-                            </strong>
-
-                            <small>
-                                Role and status are server controlled.
-                            </small>
-                        </div>
-                    </div>
+                    
 
 
                     <dl class="protected-list">

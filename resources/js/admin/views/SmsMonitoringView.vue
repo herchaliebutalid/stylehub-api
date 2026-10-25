@@ -1,13 +1,7 @@
+
 <script setup>
-import {
-    computed,
-    onMounted,
-    reactive,
-    ref,
-} from 'vue';
-
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-
 import { apiRequest } from '../services/api';
 import { useAuthStore } from '../stores/auth';
 
@@ -15,6 +9,8 @@ const router = useRouter();
 const auth = useAuthStore();
 
 const notifications = ref([]);
+const isLoading = ref(false);
+const errorMessage = ref('');
 
 const summary = ref({
     total: 0,
@@ -26,9 +22,6 @@ const summary = ref({
     safe_to_retry: 0,
     uncertain_failures: 0,
 });
-
-const isLoading = ref(false);
-const errorMessage = ref('');
 
 const pagination = ref({
     current_page: 1,
@@ -51,111 +44,93 @@ const filters = reactive({
     per_page: 20,
 });
 
-
-/*
-|--------------------------------------------------------------------------
-| FILTER OPTIONS
-|--------------------------------------------------------------------------
-*/
-
 const statusOptions = [
-    {
-        value: 'pending',
-        label: 'Pending',
-    },
-    {
-        value: 'processing',
-        label: 'Processing',
-    },
-    {
-        value: 'accepted',
-        label: 'Accepted by Provider',
-    },
-    {
-        value: 'failed',
-        label: 'Failed',
-    },
-    {
-        value: 'skipped',
-        label: 'Skipped',
-    },
+    { value: 'pending', label: 'Pending' },
+    { value: 'processing', label: 'Processing' },
+    { value: 'accepted', label: 'Accepted by Provider' },
+    { value: 'failed', label: 'Failed' },
+    { value: 'skipped', label: 'Skipped' },
 ];
 
 const typeOptions = [
-    {
-        value: 'booking_received',
-        label: 'Booking Received',
-    },
-    {
-        value: 'appointment_confirmed',
-        label: 'Appointment Confirmed',
-    },
-    {
-        value: 'appointment_declined',
-        label: 'Appointment Declined',
-    },
-    {
-        value: 'appointment_cancelled',
-        label: 'Appointment Cancelled',
-    },
-    {
-        value: 'reschedule_approved',
-        label: 'Reschedule Approved',
-    },
-    {
-        value: 'reschedule_rejected',
-        label: 'Reschedule Rejected',
-    },
-    {
-        value: 'appointment_reminder',
-        label: 'Appointment Reminder',
-    },
-    {
-        value: 'system_test',
-        label: 'System Test',
-    },
+    { value: 'booking_received', label: 'Booking Received' },
+    { value: 'appointment_confirmed', label: 'Appointment Confirmed' },
+    { value: 'appointment_declined', label: 'Appointment Declined' },
+    { value: 'appointment_cancelled', label: 'Appointment Cancelled' },
+    { value: 'reschedule_approved', label: 'Reschedule Approved' },
+    { value: 'reschedule_rejected', label: 'Reschedule Rejected' },
+    { value: 'appointment_reminder', label: 'Appointment Reminder' },
+    { value: 'system_test', label: 'System Test' },
 ];
 
 const failureOptions = [
+    { value: 'definite', label: 'Definite Failure' },
+    { value: 'uncertain', label: 'Uncertain Delivery Outcome' },
+];
+
+const overviewCards = [
     {
-        value: 'definite',
-        label: 'Definite Failure',
+        key: 'total',
+        title: 'Total SMS',
+        caption: 'All notifications',
+        icon: 'M5 4h14v16H5z M9 9h6 M9 13h6 M9 17h3',
     },
     {
-        value: 'uncertain',
-        label: 'Uncertain Delivery Outcome',
+        key: 'accepted',
+        title: 'Provider accepted',
+        caption: 'Delivery not guaranteed',
+        icon: 'M20 6L9 17l-5-5',
+    },
+    {
+        key: 'pending',
+        title: 'Pending',
+        caption: 'Awaiting processing',
+        icon: 'M12 7v5l3 2 M21 12a9 9 0 1 1-18 0a9 9 0 0 1 18 0',
+    },
+    {
+        key: 'processing',
+        title: 'Processing',
+        caption: 'Being processed',
+        icon: 'M20 7v5h-5 M4 17v-5h5 M5.5 9a8 8 0 0 1 13-2 M18.5 15a8 8 0 0 1-13 2',
+    },
+    {
+        key: 'failed',
+        title: 'Failed',
+        caption: 'Send attempts failed',
+        icon: 'M5 5l14 14 M19 5L5 19',
+    },
+    {
+        key: 'skipped',
+        title: 'Skipped',
+        caption: 'Not submitted',
+        icon: 'M5 12h14',
+    },
+    {
+        key: 'safe_to_retry',
+        title: 'Safe to retry',
+        caption: 'Definite failures',
+        icon: 'M20 11a8 8 0 1 0-2 5 M20 5v6h-6',
+    },
+    {
+        key: 'uncertain_failures',
+        title: 'Uncertain',
+        caption: 'Outcome unknown',
+        icon: 'M12 3l10 18H2L12 3z M12 9v5 M12 17h.01',
     },
 ];
 
-const numberFormatter =
-    new Intl.NumberFormat(
-        'en-PH',
-    );
+const numberFormatter = new Intl.NumberFormat('en-PH');
 
-
-/*
-|--------------------------------------------------------------------------
-| HELPERS
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================
+   FORMATTING
+   ========================================================== */
 
 function formatNumber(value) {
-    const number =
-        Number(
-            value ?? 0,
-        );
+    const number = Number(value ?? 0);
 
-    if (
-        !Number.isFinite(
-            number,
-        )
-    ) {
-        return '0';
-    }
-
-    return numberFormatter.format(
-        number,
-    );
+    return Number.isFinite(number)
+        ? numberFormatter.format(number)
+        : '0';
 }
 
 function humanize(value) {
@@ -164,26 +139,17 @@ function humanize(value) {
     }
 
     return String(value)
-        .replaceAll(
-            '_',
-            ' ',
-        )
+        .replaceAll('_', ' ')
         .replace(
             /\b\w/g,
-            (character) =>
-                character.toUpperCase(),
+            (letter) => letter.toUpperCase(),
         );
 }
 
 function statusClass(value) {
-    return String(
-        value ?? '',
-    )
+    return String(value ?? '')
         .toLowerCase()
-        .replaceAll(
-            '_',
-            '-',
-        );
+        .replaceAll('_', '-');
 }
 
 function formatDateTime(value) {
@@ -191,196 +157,121 @@ function formatDateTime(value) {
         return '—';
     }
 
-    const date =
-        new Date(value);
+    const date = new Date(value);
 
-    if (
-        Number.isNaN(
-            date.getTime(),
-        )
-    ) {
+    if (Number.isNaN(date.getTime())) {
         return '—';
     }
 
-    return new Intl.DateTimeFormat(
-        'en-PH',
-        {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            timeZone: 'Asia/Manila',
-        },
-    ).format(date);
+    return new Intl.DateTimeFormat('en-PH', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZone: 'Asia/Manila',
+    }).format(date);
 }
 
+/* ==========================================================
+   SMS PROVIDER DISPLAY
+   ========================================================== */
 
-/*
-|--------------------------------------------------------------------------
-| FILTER COUNT
-|--------------------------------------------------------------------------
-*/
+function providerLabel(value) {
+    const original = String(value ?? '').trim();
+    const provider = original.toLowerCase();
 
-const activeFiltersCount =
-    computed(() => {
-        let count = 0;
+    if (!original) {
+        return 'Not recorded';
+    }
 
-        if (
-            filters.search.trim()
-        ) {
-            count += 1;
-        }
+    if (provider === 'textbee') {
+        return 'TextBee';
+    }
 
-        if (
-            filters.status
-        ) {
-            count += 1;
-        }
+    if (provider === 'semaphore') {
+        return 'Semaphore (legacy label)';
+    }
 
-        if (
-            filters.type
-        ) {
-            count += 1;
-        }
+    return original;
+}
 
-        if (
-            filters.failure_kind
-        ) {
-            count += 1;
-        }
+function isLegacyProvider(value) {
+    return (
+        String(value ?? '')
+            .trim()
+            .toLowerCase() === 'semaphore'
+    );
+}
 
-        if (
-            filters.provider.trim()
-        ) {
-            count += 1;
-        }
+/* ==========================================================
+   ACTIVE FILTERS
+   ========================================================== */
 
-        if (
-            filters.user_id
-        ) {
-            count += 1;
-        }
+const activeFiltersCount = computed(() =>
+    [
+        filters.search.trim(),
+        filters.status,
+        filters.type,
+        filters.failure_kind,
+        filters.provider.trim(),
+        filters.user_id,
+        filters.appointment_id,
+        filters.date_from,
+        filters.date_to,
+    ].filter(Boolean).length,
+);
 
-        if (
-            filters.appointment_id
-        ) {
-            count += 1;
-        }
+/* ==========================================================
+   PAGINATION
+   ========================================================== */
 
-        if (
-            filters.date_from
-        ) {
-            count += 1;
-        }
+const firstResult = computed(() =>
+    pagination.value.total === 0
+        ? 0
+        : (
+            pagination.value.current_page - 1
+        ) * pagination.value.per_page + 1,
+);
 
-        if (
-            filters.date_to
-        ) {
-            count += 1;
-        }
+const lastResult = computed(() =>
+    Math.min(
+        pagination.value.total,
+        pagination.value.current_page *
+            pagination.value.per_page,
+    ),
+);
 
-        return count;
-    });
-
-
-/*
-|--------------------------------------------------------------------------
-| PAGINATION
-|--------------------------------------------------------------------------
-*/
-
-const firstResult =
-    computed(() => {
-        if (
-            pagination.value.total
-            === 0
-        ) {
-            return 0;
-        }
-
-        return (
-            (
-                pagination.value
-                    .current_page
-                - 1
-            )
-            *
-            pagination.value
-                .per_page
-        )
-        + 1;
-    });
-
-const lastResult =
-    computed(() =>
-        Math.min(
-            pagination.value.total,
-
-            pagination.value
-                .current_page
-            *
-            pagination.value
-                .per_page,
-        )
+const visiblePages = computed(() => {
+    const first = Math.max(
+        1,
+        pagination.value.current_page - 2,
     );
 
-const visiblePages =
-    computed(() => {
-        const current =
-            pagination.value
-                .current_page;
+    const last = Math.min(
+        pagination.value.last_page,
+        pagination.value.current_page + 2,
+    );
 
-        const last =
-            pagination.value
-                .last_page;
+    return Array.from(
+        {
+            length: Math.max(0, last - first + 1),
+        },
+        (_, index) => first + index,
+    );
+});
 
-        const start =
-            Math.max(
-                1,
-                current - 2,
-            );
-
-        const end =
-            Math.min(
-                last,
-                current + 2,
-            );
-
-        const pages = [];
-
-        for (
-            let page = start;
-            page <= end;
-            page += 1
-        ) {
-            pages.push(
-                page,
-            );
-        }
-
-        return pages;
-    });
-
-
-/*
-|--------------------------------------------------------------------------
-| FILTER VALIDATION
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================
+   FILTER VALIDATION
+   ========================================================== */
 
 function validateFilters() {
-    errorMessage.value =
-        '';
+    errorMessage.value = '';
 
     if (
-        filters.date_from
-        &&
-        filters.date_to
-        &&
-        filters.date_to
-            <
-            filters.date_from
+        filters.date_from &&
+        filters.date_to &&
+        filters.date_to < filters.date_from
     ) {
         errorMessage.value =
             'The end date must be on or after the start date.';
@@ -391,474 +282,221 @@ function validateFilters() {
     return true;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| QUERY
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================
+   QUERY BUILDER
+   ========================================================== */
 
 function buildQuery(page) {
-    const query =
-        new URLSearchParams();
+    const query = new URLSearchParams();
 
-    const search =
-        filters.search
-            .trim();
+    for (const key of [
+        'search',
+        'status',
+        'type',
+        'failure_kind',
+        'provider',
+        'user_id',
+        'appointment_id',
+        'date_from',
+        'date_to',
+    ]) {
+        const value = String(
+            filters[key] ?? '',
+        ).trim();
 
-    const provider =
-        filters.provider
-            .trim();
-
-    if (search) {
-        query.set(
-            'search',
-            search,
-        );
+        if (value) {
+            query.set(key, value);
+        }
     }
 
-    if (
-        filters.status
-    ) {
-        query.set(
-            'status',
-            filters.status,
-        );
-    }
-
-    if (
-        filters.type
-    ) {
-        query.set(
-            'type',
-            filters.type,
-        );
-    }
-
-    if (
-        filters.failure_kind
-    ) {
-        query.set(
-            'failure_kind',
-            filters.failure_kind,
-        );
-    }
-
-    if (provider) {
-        query.set(
-            'provider',
-            provider,
-        );
-    }
-
-    if (
-        filters.user_id
-    ) {
-        query.set(
-            'user_id',
-            String(
-                filters.user_id,
-            ),
-        );
-    }
-
-    if (
-        filters.appointment_id
-    ) {
-        query.set(
-            'appointment_id',
-            String(
-                filters.appointment_id,
-            ),
-        );
-    }
-
-    if (
-        filters.date_from
-    ) {
-        query.set(
-            'date_from',
-            filters.date_from,
-        );
-    }
-
-    if (
-        filters.date_to
-    ) {
-        query.set(
-            'date_to',
-            filters.date_to,
-        );
-    }
-
-    query.set(
-        'page',
-        String(page),
-    );
-
-    query.set(
-        'per_page',
-        String(
-            filters.per_page,
-        ),
-    );
+    query.set('page', String(page));
+    query.set('per_page', String(filters.per_page));
 
     return query.toString();
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| AUTHENTICATION
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================
+   AUTHENTICATION
+   ========================================================== */
 
 async function authenticationFailure() {
     auth.clearSession();
 
     await router.replace({
-        name:
-            'admin.login',
+        name: 'admin.login',
     });
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| LOAD SUMMARY
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================
+   LOAD SMS SUMMARY
+   ========================================================== */
 
 async function loadSummary() {
-    const response =
-        await apiRequest(
-            '/admin/sms-notifications/summary',
-            {
-                token:
-                    auth.token,
-            },
-        );
+    const response = await apiRequest(
+        '/admin/sms-notifications/summary',
+        {
+            token: auth.token,
+        },
+    );
 
-    summary.value = {
-        total:
-            Number(
-                response?.data
-                    ?.summary
-                    ?.total
-                ?? 0,
-            ),
+    const incoming = response?.data?.summary ?? {};
+    const next = {};
 
-        pending:
-            Number(
-                response?.data
-                    ?.summary
-                    ?.pending
-                ?? 0,
-            ),
+    for (const key of Object.keys(summary.value)) {
+        next[key] = Number(incoming[key] ?? 0);
+    }
 
-        processing:
-            Number(
-                response?.data
-                    ?.summary
-                    ?.processing
-                ?? 0,
-            ),
-
-        accepted:
-            Number(
-                response?.data
-                    ?.summary
-                    ?.accepted
-                ?? 0,
-            ),
-
-        failed:
-            Number(
-                response?.data
-                    ?.summary
-                    ?.failed
-                ?? 0,
-            ),
-
-        skipped:
-            Number(
-                response?.data
-                    ?.summary
-                    ?.skipped
-                ?? 0,
-            ),
-
-        safe_to_retry:
-            Number(
-                response?.data
-                    ?.summary
-                    ?.safe_to_retry
-                ?? 0,
-            ),
-
-        uncertain_failures:
-            Number(
-                response?.data
-                    ?.summary
-                    ?.uncertain_failures
-                ?? 0,
-            ),
-    };
+    summary.value = next;
 }
 
+/* ==========================================================
+   LOAD SMS NOTIFICATIONS
+   ========================================================== */
 
-/*
-|--------------------------------------------------------------------------
-| LOAD NOTIFICATIONS
-|--------------------------------------------------------------------------
-*/
+async function loadNotifications(page) {
+    const response = await apiRequest(
+        `/admin/sms-notifications?${buildQuery(page)}`,
+        {
+            token: auth.token,
+        },
+    );
 
-async function loadNotifications(
-    page = 1,
-) {
-    const response =
-        await apiRequest(
-            `/admin/sms-notifications?${buildQuery(page)}`,
-            {
-                token:
-                    auth.token,
-            },
-        );
+    notifications.value = Array.isArray(
+        response?.data?.sms_notifications,
+    )
+        ? response.data.sms_notifications
+        : [];
 
-    notifications.value =
-        Array.isArray(
-            response?.data
-                ?.sms_notifications,
-        )
-            ? response.data.sms_notifications
-            : [];
+    const next = response?.data?.pagination ?? {};
 
     pagination.value = {
-        current_page:
-            Number(
-                response?.data
-                    ?.pagination
-                    ?.current_page
-                ?? 1,
-            ),
-
-        per_page:
-            Number(
-                response?.data
-                    ?.pagination
-                    ?.per_page
-                ?? filters.per_page,
-            ),
-
-        total:
-            Number(
-                response?.data
-                    ?.pagination
-                    ?.total
-                ?? 0,
-            ),
-
-        last_page:
-            Number(
-                response?.data
-                    ?.pagination
-                    ?.last_page
-                ?? 1,
-            ),
-
-        has_more_pages:
-            Boolean(
-                response?.data
-                    ?.pagination
-                    ?.has_more_pages,
-            ),
+        current_page: Number(next.current_page ?? 1),
+        per_page: Number(
+            next.per_page ?? filters.per_page,
+        ),
+        total: Number(next.total ?? 0),
+        last_page: Number(next.last_page ?? 1),
+        has_more_pages: Boolean(
+            next.has_more_pages,
+        ),
     };
 }
 
+/* ==========================================================
+   LOAD PAGE
+   ========================================================== */
 
-/*
-|--------------------------------------------------------------------------
-| LOAD PAGE
-|--------------------------------------------------------------------------
-*/
-
-async function loadPage(
-    page = 1,
-) {
-    if (
-        !auth.token
-    ) {
+async function loadPage(page = 1) {
+    if (!auth.token) {
         await authenticationFailure();
-
         return;
     }
 
-    if (
-        !validateFilters()
-    ) {
+    if (!validateFilters()) {
         return;
     }
 
-    isLoading.value =
-        true;
-
-    errorMessage.value =
-        '';
+    isLoading.value = true;
+    errorMessage.value = '';
 
     try {
         await Promise.all([
             loadSummary(),
-
-            loadNotifications(
-                page,
-            ),
+            loadNotifications(page),
         ]);
-    } catch (
-        error
-    ) {
+    } catch (error) {
         if (
-            error?.status === 401
-            ||
+            error?.status === 401 ||
             error?.status === 403
         ) {
             await authenticationFailure();
-
             return;
         }
 
         errorMessage.value =
-            error?.data?.message
-            ??
-            error?.message
-            ??
+            error?.data?.message ??
+            error?.message ??
             'Unable to load SMS monitoring data.';
     } finally {
-        isLoading.value =
-            false;
+        isLoading.value = false;
     }
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| FILTER ACTIONS
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================
+   FILTER ACTIONS
+   ========================================================== */
 
 async function applyFilters() {
-    await loadPage(
-        1,
-    );
+    await loadPage(1);
 }
 
 async function resetFilters() {
-    filters.search = '';
-    filters.status = '';
-    filters.type = '';
-    filters.failure_kind = '';
-    filters.provider = '';
-    filters.user_id = '';
-    filters.appointment_id = '';
-    filters.date_from = '';
-    filters.date_to = '';
-    filters.per_page = 20;
+    Object.assign(filters, {
+        search: '',
+        status: '',
+        type: '',
+        failure_kind: '',
+        provider: '',
+        user_id: '',
+        appointment_id: '',
+        date_from: '',
+        date_to: '',
+        per_page: 20,
+    });
 
-    await loadPage(
-        1,
-    );
+    await loadPage(1);
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| PAGINATION
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================
+   PAGE NAVIGATION
+   ========================================================== */
 
 async function changePage(page) {
     if (
-        page < 1
-        ||
-        page
-            >
-            pagination.value
-                .last_page
-        ||
-        page
-            ===
-            pagination.value
-                .current_page
-        ||
-        isLoading.value
+        isLoading.value ||
+        page < 1 ||
+        page > pagination.value.last_page ||
+        page === pagination.value.current_page
     ) {
         return;
     }
 
-    await loadPage(
-        page,
-    );
+    await loadPage(page);
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| NAVIGATION
-|--------------------------------------------------------------------------
-*/
-
-async function openNotification(
-    notification,
-) {
+async function openNotification(notification) {
     await router.push({
-        name:
-            'admin.sms-notification.detail',
-
+        name: 'admin.sms-notification.detail',
         params: {
-            smsNotificationId:
-                notification.id,
+            smsNotificationId: notification.id,
         },
     });
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| INITIAL LOAD
-|--------------------------------------------------------------------------
-*/
-
 onMounted(() => {
-    loadPage();
+    void loadPage();
 });
 </script>
 
-
 <template>
     <div class="sms-page">
-        <!-- ============================================================
-             INTRODUCTION
-             ============================================================ -->
+
+        <!-- =============================================
+             PAGE HEADER
+             ============================================= -->
 
         <section class="sms-intro">
             <div class="sms-intro-copy">
-                <div class="sms-intro-label">
-                    <span class="sms-intro-dot" />
+                
 
-                    Messaging operations
-                </div>
-
-                <h2>
-                    SMS delivery monitoring
-                </h2>
+                <h2>SMS Monitoring</h2>
 
                 <p>
-                    Monitor StyleHub SMS notifications,
-                    provider acceptance, failures, retry
-                    eligibility and notification processing
-                    across the platform.
+                    View delivery records, provider responses,
+                    failures, and retry eligibility across
+                    StyleHub.
                 </p>
             </div>
-
 
             <div class="sms-intro-actions">
                 <div class="sms-total-card">
@@ -875,443 +513,144 @@ onMounted(() => {
                                 rx="3"
                             />
 
-                            <path
-                                d="M8 7h8M8 11h8M8 15h5"
-                            />
+                            <path d="M8 7h8M8 11h8M8 15h5" />
                         </svg>
                     </div>
 
                     <div>
-                        <span>
-                            SMS records
-                        </span>
+                        <span>Total SMS records</span>
 
                         <strong>
-                            {{
-                                formatNumber(
-                                    summary.total
-                                )
-                            }}
+                            {{ formatNumber(summary.total) }}
                         </strong>
                     </div>
                 </div>
 
-
                 <button
                     type="button"
                     class="secondary-button sms-refresh-button"
-                    :disabled="
-                        isLoading
-                    "
+                    :disabled="isLoading"
                     @click="
-                        loadPage(
-                            pagination.current_page
-                        )
+                        loadPage(pagination.current_page)
                     "
                 >
                     <svg
                         viewBox="0 0 24 24"
                         aria-hidden="true"
                         :class="{
-                            spinning:
-                                isLoading,
+                            spinning: isLoading,
                         }"
                     >
                         <path
                             d="M20 11a8 8 0 10-2.3 5.7"
                         />
 
-                        <path
-                            d="M20 5v6h-6"
-                        />
+                        <path d="M20 5v6h-6" />
                     </svg>
 
-                    <span>
-                        {{
-                            isLoading
-                                ? 'Refreshing'
-                                : 'Refresh'
-                        }}
-                    </span>
+                    {{
+                        isLoading
+                            ? 'Refreshing...'
+                            : 'Refresh'
+                    }}
                 </button>
             </div>
         </section>
 
+        <!-- =============================================
+             TEXTBEE INFORMATION
+             ============================================= -->
 
-        <!-- ============================================================
-             OPERATIONS NOTICE
-             ============================================================ -->
-
-        <section class="sms-operations-note">
-            <div class="sms-operations-icon">
+        <section class="sms-info-banner">
+            <div class="sms-info-icon">
                 <svg
                     viewBox="0 0 24 24"
                     aria-hidden="true"
                 >
-                    <path
-                        d="M12 3l8 4v5c0 5-3.4 8.2-8 9.5C7.4 20.2 4 17 4 12V7l8-4z"
+                    <circle
+                        cx="12"
+                        cy="12"
+                        r="9"
                     />
 
-                    <path
-                        d="M12 8v5M12 16h.01"
-                    />
+                    <path d="M12 11v5M12 8h.01" />
                 </svg>
             </div>
 
-            <div class="sms-operations-copy">
+            <div>
                 <strong>
-                    Retry safety matters
+                    TextBee SMS monitoring
                 </strong>
 
                 <p>
-                    Definite failures may be marked safe to
-                    retry. An uncertain failure means the
-                    delivery outcome is not known, so it should
-                    not be treated the same as a definite
-                    failure.
+                    New SMS records are labeled TextBee.
+                    Older records can still show
+                    <b>Semaphore (legacy label)</b>;
+                    check their actual sending history
+                    before interpreting them.
+
+                    "Accepted by Provider" is not proof
+                    of handset delivery.
+
+                    Retry only definite failures
+                    marked safe to retry.
                 </p>
             </div>
-
-            <span class="sms-monitoring-badge">
-                Operations
-            </span>
         </section>
 
+        <!-- =============================================
+             SUMMARY CARDS
+             ============================================= -->
 
-        <!-- ============================================================
-             SUMMARY
-             ============================================================ -->
-
-        <section class="sms-summary-grid">
-            <!-- TOTAL -->
-
-            <article class="sms-summary-card">
-                <div class="sms-summary-icon total">
+        <section
+            class="sms-summary-grid"
+            aria-label="SMS summary"
+        >
+            <article
+                v-for="card in overviewCards"
+                :key="card.key"
+                class="sms-summary-card"
+            >
+                <div
+                    class="sms-summary-icon"
+                    :class="card.key"
+                >
                     <svg
                         viewBox="0 0 24 24"
                         aria-hidden="true"
                     >
-                        <rect
-                            x="4"
-                            y="3"
-                            width="16"
-                            height="18"
-                            rx="3"
-                        />
-
-                        <path
-                            d="M8 7h8M8 11h8M8 15h5"
-                        />
+                        <path :d="card.icon" />
                     </svg>
                 </div>
 
                 <div class="sms-summary-copy">
                     <span>
-                        Total
+                        {{ card.title }}
                     </span>
 
                     <strong>
                         {{
                             formatNumber(
-                                summary.total
+                                summary[card.key]
                             )
                         }}
                     </strong>
 
                     <small>
-                        SMS records
-                    </small>
-                </div>
-            </article>
-
-
-            <!-- ACCEPTED -->
-
-            <article class="sms-summary-card">
-                <div class="sms-summary-icon accepted">
-                    <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <circle
-                            cx="12"
-                            cy="12"
-                            r="9"
-                        />
-
-                        <path
-                            d="M8 12l3 3 5-6"
-                        />
-                    </svg>
-                </div>
-
-                <div class="sms-summary-copy">
-                    <span>
-                        Provider accepted
-                    </span>
-
-                    <strong>
-                        {{
-                            formatNumber(
-                                summary.accepted
-                            )
-                        }}
-                    </strong>
-
-                    <small>
-                        Accepted by provider
-                    </small>
-                </div>
-            </article>
-
-
-            <!-- PENDING -->
-
-            <article class="sms-summary-card">
-                <div class="sms-summary-icon pending">
-                    <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <circle
-                            cx="12"
-                            cy="12"
-                            r="9"
-                        />
-
-                        <path
-                            d="M12 7v5l3 2"
-                        />
-                    </svg>
-                </div>
-
-                <div class="sms-summary-copy">
-                    <span>
-                        Pending
-                    </span>
-
-                    <strong>
-                        {{
-                            formatNumber(
-                                summary.pending
-                            )
-                        }}
-                    </strong>
-
-                    <small>
-                        Waiting for processing
-                    </small>
-                </div>
-            </article>
-
-
-            <!-- PROCESSING -->
-
-            <article class="sms-summary-card">
-                <div class="sms-summary-icon processing">
-                    <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <path
-                            d="M4 4v6h6"
-                        />
-
-                        <path
-                            d="M5.5 15a8 8 0 102-8"
-                        />
-                    </svg>
-                </div>
-
-                <div class="sms-summary-copy">
-                    <span>
-                        Processing
-                    </span>
-
-                    <strong>
-                        {{
-                            formatNumber(
-                                summary.processing
-                            )
-                        }}
-                    </strong>
-
-                    <small>
-                        Currently being processed
-                    </small>
-                </div>
-            </article>
-
-
-            <!-- FAILED -->
-
-            <article class="sms-summary-card">
-                <div class="sms-summary-icon failed">
-                    <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <circle
-                            cx="12"
-                            cy="12"
-                            r="9"
-                        />
-
-                        <path
-                            d="M9 9l6 6M15 9l-6 6"
-                        />
-                    </svg>
-                </div>
-
-                <div class="sms-summary-copy">
-                    <span>
-                        Failed
-                    </span>
-
-                    <strong>
-                        {{
-                            formatNumber(
-                                summary.failed
-                            )
-                        }}
-                    </strong>
-
-                    <small>
-                        Failed processing records
-                    </small>
-                </div>
-            </article>
-
-
-            <!-- SKIPPED -->
-
-            <article class="sms-summary-card">
-                <div class="sms-summary-icon skipped">
-                    <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <circle
-                            cx="12"
-                            cy="12"
-                            r="9"
-                        />
-
-                        <path
-                            d="M8 12h8"
-                        />
-                    </svg>
-                </div>
-
-                <div class="sms-summary-copy">
-                    <span>
-                        Skipped
-                    </span>
-
-                    <strong>
-                        {{
-                            formatNumber(
-                                summary.skipped
-                            )
-                        }}
-                    </strong>
-
-                    <small>
-                        Intentionally not processed
-                    </small>
-                </div>
-            </article>
-
-
-            <!-- SAFE TO RETRY -->
-
-            <article class="sms-summary-card retry-card">
-                <div class="sms-summary-icon retry">
-                    <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <path
-                            d="M4 4v6h6"
-                        />
-
-                        <path
-                            d="M5.5 15a8 8 0 102-8"
-                        />
-
-                        <path
-                            d="M15 12l2 2 4-4"
-                        />
-                    </svg>
-                </div>
-
-                <div class="sms-summary-copy">
-                    <span>
-                        Safe to retry
-                    </span>
-
-                    <strong>
-                        {{
-                            formatNumber(
-                                summary.safe_to_retry
-                            )
-                        }}
-                    </strong>
-
-                    <small>
-                        Definite failures only
-                    </small>
-                </div>
-            </article>
-
-
-            <!-- UNCERTAIN -->
-
-            <article class="sms-summary-card uncertain-card">
-                <div class="sms-summary-icon uncertain">
-                    <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <path
-                            d="M12 3l9 17H3L12 3z"
-                        />
-
-                        <path
-                            d="M12 9v4M12 16h.01"
-                        />
-                    </svg>
-                </div>
-
-                <div class="sms-summary-copy">
-                    <span>
-                        Uncertain
-                    </span>
-
-                    <strong>
-                        {{
-                            formatNumber(
-                                summary.uncertain_failures
-                            )
-                        }}
-                    </strong>
-
-                    <small>
-                        Unknown delivery outcome
+                        {{ card.caption }}
                     </small>
                 </div>
             </article>
         </section>
 
-
-        <!-- ============================================================
+        <!-- =============================================
              FILTERS
-             ============================================================ -->
+             ============================================= -->
 
         <section class="filter-card sms-filter-card">
-            <div class="filter-card-heading">
-                <div class="filter-heading-left">
-                    <div class="filter-heading-icon">
+            <div class="sms-section-heading">
+                <div class="sms-heading-left">
+                    <div class="sms-heading-icon">
                         <svg
                             viewBox="0 0 24 24"
                             aria-hidden="true"
@@ -1323,37 +662,27 @@ onMounted(() => {
                     </div>
 
                     <div>
-                        <h3>
-                            Filter SMS records
-                        </h3>
+                        <h3>Filter SMS records</h3>
 
                         <p>
-                            Search delivery records and narrow
-                            results by status, notification type,
-                            failure classification or related record.
+                            Find records by status, type,
+                            provider, date, user, or
+                            appointment.
                         </p>
                     </div>
                 </div>
 
                 <span
-                    v-if="
-                        activeFiltersCount > 0
-                    "
-                    class="active-filter-count"
+                    v-if="activeFiltersCount"
+                    class="sms-filter-count"
                 >
-                    {{
-                        activeFiltersCount
-                    }}
-                    active
+                    {{ activeFiltersCount }} active
                 </span>
             </div>
 
-
             <form
                 class="sms-filters"
-                @submit.prevent="
-                    applyFilters
-                "
+                @submit.prevent="applyFilters"
             >
                 <!-- SEARCH -->
 
@@ -1373,23 +702,18 @@ onMounted(() => {
                                 r="7"
                             />
 
-                            <path
-                                d="M20 20l-4-4"
-                            />
+                            <path d="M20 20l-4-4" />
                         </svg>
 
                         <input
                             id="sms-search"
-                            v-model="
-                                filters.search
-                            "
+                            v-model="filters.search"
                             type="search"
                             maxlength="100"
-                            placeholder="Recipient, user, provider ID or error"
-                        >
+                            placeholder="Recipient, user, SMS ID, or error"
+                        />
                     </div>
                 </div>
-
 
                 <!-- STATUS -->
 
@@ -1400,33 +724,23 @@ onMounted(() => {
 
                     <select
                         id="sms-status"
-                        v-model="
-                            filters.status
-                        "
+                        v-model="filters.status"
                     >
                         <option value="">
                             All statuses
                         </option>
 
                         <option
-                            v-for="
-                                option
-                                in statusOptions
-                            "
-                            :key="
-                                option.value
-                            "
-                            :value="
-                                option.value
-                            "
+                            v-for="option in statusOptions"
+                            :key="option.value"
+                            :value="option.value"
                         >
                             {{ option.label }}
                         </option>
                     </select>
                 </div>
 
-
-                <!-- TYPE -->
+                <!-- NOTIFICATION TYPE -->
 
                 <div class="filter-field">
                     <label for="sms-type">
@@ -1435,66 +749,46 @@ onMounted(() => {
 
                     <select
                         id="sms-type"
-                        v-model="
-                            filters.type
-                        "
+                        v-model="filters.type"
                     >
                         <option value="">
                             All types
                         </option>
 
                         <option
-                            v-for="
-                                option
-                                in typeOptions
-                            "
-                            :key="
-                                option.value
-                            "
-                            :value="
-                                option.value
-                            "
+                            v-for="option in typeOptions"
+                            :key="option.value"
+                            :value="option.value"
                         >
                             {{ option.label }}
                         </option>
                     </select>
                 </div>
 
-
                 <!-- FAILURE KIND -->
 
                 <div class="filter-field">
-                    <label for="failure-kind">
+                    <label for="sms-failure-kind">
                         Failure kind
                     </label>
 
                     <select
-                        id="failure-kind"
-                        v-model="
-                            filters.failure_kind
-                        "
+                        id="sms-failure-kind"
+                        v-model="filters.failure_kind"
                     >
                         <option value="">
                             All failure kinds
                         </option>
 
                         <option
-                            v-for="
-                                option
-                                in failureOptions
-                            "
-                            :key="
-                                option.value
-                            "
-                            :value="
-                                option.value
-                            "
+                            v-for="option in failureOptions"
+                            :key="option.value"
+                            :value="option.value"
                         >
                             {{ option.label }}
                         </option>
                     </select>
                 </div>
-
 
                 <!-- PROVIDER -->
 
@@ -1505,17 +799,14 @@ onMounted(() => {
 
                     <input
                         id="sms-provider"
-                        v-model="
-                            filters.provider
-                        "
+                        v-model="filters.provider"
                         type="text"
                         maxlength="32"
-                        placeholder="e.g. semaphore"
-                    >
+                        placeholder="e.g. textbee"
+                    />
                 </div>
 
-
-                <!-- USER -->
+                <!-- USER ID -->
 
                 <div class="filter-field">
                     <label for="sms-user-id">
@@ -1524,18 +815,15 @@ onMounted(() => {
 
                     <input
                         id="sms-user-id"
-                        v-model="
-                            filters.user_id
-                        "
+                        v-model="filters.user_id"
                         type="number"
                         min="1"
                         step="1"
                         placeholder="Any"
-                    >
+                    />
                 </div>
 
-
-                <!-- APPOINTMENT -->
+                <!-- APPOINTMENT ID -->
 
                 <div class="filter-field">
                     <label for="sms-appointment-id">
@@ -1544,144 +832,80 @@ onMounted(() => {
 
                     <input
                         id="sms-appointment-id"
-                        v-model="
-                            filters.appointment_id
-                        "
+                        v-model="filters.appointment_id"
                         type="number"
                         min="1"
                         step="1"
                         placeholder="Any"
-                    >
+                    />
                 </div>
-
 
                 <!-- DATE FROM -->
 
                 <div class="filter-field">
                     <label for="sms-date-from">
-                        From
+                        Date from
                     </label>
 
                     <input
                         id="sms-date-from"
-                        v-model="
-                            filters.date_from
-                        "
+                        v-model="filters.date_from"
                         type="date"
-                    >
+                    />
                 </div>
-
 
                 <!-- DATE TO -->
 
                 <div class="filter-field">
                     <label for="sms-date-to">
-                        To
+                        Date to
                     </label>
 
                     <input
                         id="sms-date-to"
-                        v-model="
-                            filters.date_to
-                        "
+                        v-model="filters.date_to"
                         type="date"
-                    >
+                    />
                 </div>
 
+                <!-- FILTER ACTIONS -->
 
-                <!-- ACTIONS -->
-
-                <div class="filter-actions sms-filter-actions">
+                <div class="sms-filter-actions">
                     <button
                         type="submit"
                         class="primary-button"
-                        :disabled="
-                            isLoading
-                        "
+                        :disabled="isLoading"
                     >
-                        <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <path
-                                d="M4 6h16M7 12h10M10 18h4"
-                            />
-                        </svg>
-
-                        <span>
-                            Apply filters
-                        </span>
+                        Apply filters
                     </button>
 
                     <button
                         type="button"
                         class="secondary-button"
                         :disabled="
-                            isLoading
-                            ||
+                            isLoading ||
                             activeFiltersCount === 0
                         "
-                        @click="
-                            resetFilters
-                        "
+                        @click="resetFilters"
                     >
-                        <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <path
-                                d="M4 4v6h6"
-                            />
-
-                            <path
-                                d="M5.5 15a8 8 0 102-8"
-                            />
-                        </svg>
-
-                        <span>
-                            Reset
-                        </span>
+                        Reset
                     </button>
                 </div>
             </form>
         </section>
 
-
-        <!-- ============================================================
-             ERROR
-             ============================================================ -->
+        <!-- =============================================
+             ERROR STATE
+             ============================================= -->
 
         <div
-            v-if="
-                errorMessage
-            "
+            v-if="errorMessage"
             class="error-message sms-error"
             role="alert"
         >
-            <div class="sms-error-icon">
-                <svg
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                >
-                    <circle
-                        cx="12"
-                        cy="12"
-                        r="9"
-                    />
-
-                    <path
-                        d="M12 8v5"
-                    />
-
-                    <path
-                        d="M12 17h.01"
-                    />
-                </svg>
-            </div>
-
             <div class="sms-error-copy">
                 <strong>
-                    Unable to load SMS monitoring
+                    SMS monitoring needs attention
                 </strong>
 
                 <p>
@@ -1692,28 +916,23 @@ onMounted(() => {
             <button
                 type="button"
                 class="retry-button"
-                :disabled="
-                    isLoading
-                "
+                :disabled="isLoading"
                 @click="
-                    loadPage(
-                        pagination.current_page
-                    )
+                    loadPage(pagination.current_page)
                 "
             >
                 Try again
             </button>
         </div>
 
-
-        <!-- ============================================================
-             SMS TABLE CARD
-             ============================================================ -->
+        <!-- =============================================
+             SMS RECORDS
+             ============================================= -->
 
         <section class="sms-card">
-            <div class="table-header sms-table-header">
-                <div class="table-heading">
-                    <div class="table-heading-icon">
+            <div class="sms-table-heading">
+                <div class="sms-heading-left">
+                    <div class="sms-heading-icon">
                         <svg
                             viewBox="0 0 24 24"
                             aria-hidden="true"
@@ -1752,37 +971,24 @@ onMounted(() => {
                     </div>
                 </div>
 
-
-                <div class="table-header-actions">
-                    <div
-                        v-if="
-                            activeFiltersCount > 0
-                        "
-                        class="table-filter-status"
+                <div class="sms-table-actions">
+                    <span
+                        v-if="activeFiltersCount"
+                        class="sms-filter-count"
                     >
-                        <span class="table-filter-dot" />
-
                         Filtered
-                    </div>
+                    </span>
 
-                    <div class="per-page">
+                    <div class="per-page sms-per-page">
                         <label for="sms-per-page">
                             Rows
                         </label>
 
                         <select
                             id="sms-per-page"
-                            v-model.number="
-                                filters.per_page
-                            "
-                            :disabled="
-                                isLoading
-                            "
-                            @change="
-                                loadPage(
-                                    1
-                                )
-                            "
+                            v-model.number="filters.per_page"
+                            :disabled="isLoading"
+                            @change="loadPage(1)"
                         >
                             <option :value="10">
                                 10
@@ -1800,45 +1006,38 @@ onMounted(() => {
                 </div>
             </div>
 
-
-            <!-- ========================================================
+            <!-- =========================================
                  LOADING
-                 ======================================================== -->
+                 ========================================= -->
 
             <div
                 v-if="
-                    isLoading
-                    &&
+                    isLoading &&
                     notifications.length === 0
                 "
-                class="sms-loading-state"
+                class="sms-empty"
             >
-                <div class="sms-loading-icon">
-                    <div class="spinner" />
-                </div>
+                <div class="sms-spinner"></div>
 
-                <h3>
-                    Loading SMS records
-                </h3>
+                <strong>
+                    Loading SMS records...
+                </strong>
 
                 <p>
-                    Retrieving notification and
-                    delivery monitoring information.
+                    Please wait while StyleHub retrieves
+                    the latest records.
                 </p>
             </div>
 
-
-            <!-- ========================================================
-                 EMPTY
-                 ======================================================== -->
+            <!-- =========================================
+                 EMPTY STATE
+                 ========================================= -->
 
             <div
-                v-else-if="
-                    notifications.length === 0
-                "
-                class="empty-state sms-empty-state"
+                v-else-if="notifications.length === 0"
+                class="sms-empty"
             >
-                <div class="empty-icon">
+                <div class="sms-empty-icon">
                     <svg
                         viewBox="0 0 24 24"
                         aria-hidden="true"
@@ -1857,108 +1056,62 @@ onMounted(() => {
                     </svg>
                 </div>
 
-                <h3>
+                <strong>
                     No SMS records found
-                </h3>
+                </strong>
 
                 <p>
-                    No delivery records match
-                    your current filters.
+                    There are no SMS records matching
+                    your selected filters.
                 </p>
 
                 <button
-                    v-if="
-                        activeFiltersCount > 0
-                    "
+                    v-if="activeFiltersCount"
                     type="button"
-                    class="secondary-button sms-empty-reset"
-                    :disabled="
-                        isLoading
-                    "
-                    @click="
-                        resetFilters
-                    "
+                    class="secondary-button"
+                    :disabled="isLoading"
+                    @click="resetFilters"
                 >
                     Clear filters
                 </button>
             </div>
 
-
-            <!-- ========================================================
-                 TABLE
-                 ======================================================== -->
+            <!-- =========================================
+                 SMS TABLE
+                 ========================================= -->
 
             <div
                 v-else
                 class="table-wrapper sms-table-wrapper"
                 :class="{
-                    'table-refreshing':
-                        isLoading,
+                    'sms-refreshing': isLoading,
                 }"
             >
                 <table>
                     <thead>
                         <tr>
-                            <th>
-                                Notification
-                            </th>
-
-                            <th>
-                                Recipient
-                            </th>
-
-                            <th>
-                                User
-                            </th>
-
-                            <th>
-                                Appointment
-                            </th>
-
-                            <th>
-                                Status
-                            </th>
-
-                            <th>
-                                Failure
-                            </th>
-
-                            <th>
-                                Attempts
-                            </th>
-
-                            <th>
-                                Created
-                            </th>
-
-                            <th class="table-actions-heading">
-                                Action
-                            </th>
+                            <th>Notification</th>
+                            <th>Recipient / provider</th>
+                            <th>User</th>
+                            <th>Appointment</th>
+                            <th>Status</th>
+                            <th>Failure</th>
+                            <th>Attempts</th>
+                            <th>Created</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
 
-
                     <tbody>
                         <tr
-                            v-for="
-                                notification
-                                in notifications
-                            "
-                            :key="
-                                notification.id
-                            "
-                            class="sms-table-row"
-                            @dblclick="
-                                openNotification(
-                                    notification
-                                )
-                            "
+                            v-for="notification in notifications"
+                            :key="notification.id"
                         >
                             <!-- NOTIFICATION -->
 
                             <td>
-                                <div class="notification-cell">
-                                    <div class="notification-icon">
+                                <div class="sms-cell-with-icon">
+                                    <span class="sms-record-icon">
                                         <svg
                                             viewBox="0 0 24 24"
                                             aria-hidden="true"
@@ -1967,21 +1120,18 @@ onMounted(() => {
                                                 d="M4 5h16v12H9l-5 4V5z"
                                             />
 
-                                            <path
-                                                d="M8 9h8M8 13h5"
-                                            />
+                                            <path d="M8 9h8M8 13h5" />
                                         </svg>
-                                    </div>
+                                    </span>
 
-                                    <div class="notification-copy">
+                                    <div class="sms-stacked">
                                         <strong>
                                             #{{ notification.id }}
                                         </strong>
 
                                         <span>
                                             {{
-                                                notification.type_label
-                                                ||
+                                                notification.type_label ||
                                                 humanize(
                                                     notification.type
                                                 )
@@ -1991,167 +1141,108 @@ onMounted(() => {
                                 </div>
                             </td>
 
-
-                            <!-- RECIPIENT -->
+                            <!-- RECIPIENT AND PROVIDER -->
 
                             <td>
-                                <div class="recipient-cell">
-                                    <div class="recipient-number">
-                                        <svg
-                                            viewBox="0 0 24 24"
-                                            aria-hidden="true"
-                                        >
-                                            <path
-                                                d="M7 3h4l2 5-3 2c1.4 3 3.7 5.3 6.7 6.7l2-3 5 2v4c0 1.1-.9 2-2 2C11.4 21.7 2.3 12.6 2.3 2.3 2.3 1.2 3.2.3 4.3.3"
-                                            />
-                                        </svg>
-
-                                        <strong>
-                                            {{
-                                                notification.recipient
-                                                || 'Unavailable'
-                                            }}
-                                        </strong>
-                                    </div>
-
-                                    <span>
+                                <div class="sms-stacked">
+                                    <strong>
                                         {{
-                                            notification.provider
-                                            || 'No provider'
+                                            notification.recipient ||
+                                            'Unavailable'
+                                        }}
+                                    </strong>
+
+                                    <span
+                                        :class="{
+                                            'sms-legacy-provider':
+                                                isLegacyProvider(
+                                                    notification.provider
+                                                ),
+                                        }"
+                                    >
+                                        {{
+                                            providerLabel(
+                                                notification.provider
+                                            )
                                         }}
                                     </span>
                                 </div>
                             </td>
 
-
                             <!-- USER -->
 
                             <td>
-                                <div class="sms-user-cell">
-                                    <div
-                                        v-if="
-                                            notification.user
-                                        "
-                                        class="sms-user-avatar"
-                                    >
+                                <div class="sms-cell-with-icon">
+                                    <span class="sms-avatar">
                                         {{
-                                            (
-                                                notification.user
-                                                    ?.full_name
-                                                ||
-                                                notification.user
-                                                    ?.email
-                                                ||
-                                                'U'
+                                            String(
+                                                notification.user?.full_name ||
+                                                notification.user?.email ||
+                                                'S'
                                             )
                                                 .charAt(0)
                                                 .toUpperCase()
                                         }}
-                                    </div>
+                                    </span>
 
-                                    <div
-                                        v-else
-                                        class="sms-user-avatar system"
-                                    >
-                                        S
-                                    </div>
-
-                                    <div class="sms-user-copy">
+                                    <div class="sms-stacked">
                                         <strong>
                                             {{
-                                                notification.user
-                                                    ?.full_name
-                                                ||
+                                                notification.user?.full_name ||
                                                 'System / unavailable'
                                             }}
                                         </strong>
 
                                         <span>
                                             {{
-                                                notification.user
-                                                    ?.email
-                                                || '—'
+                                                notification.user?.email ||
+                                                '—'
                                             }}
                                         </span>
                                     </div>
                                 </div>
                             </td>
-
 
                             <!-- APPOINTMENT -->
 
                             <td>
                                 <div
-                                    v-if="
-                                        notification.appointment
-                                            ?.id
-                                    "
-                                    class="sms-appointment-cell"
+                                    v-if="notification.appointment?.id"
+                                    class="sms-stacked"
                                 >
-                                    <div class="sms-appointment-icon">
-                                        <svg
-                                            viewBox="0 0 24 24"
-                                            aria-hidden="true"
-                                        >
-                                            <rect
-                                                x="3"
-                                                y="5"
-                                                width="18"
-                                                height="16"
-                                                rx="2"
-                                            />
+                                    <strong>
+                                        #{{ notification.appointment.id }}
+                                    </strong>
 
-                                            <path
-                                                d="M8 3v4M16 3v4M3 10h18"
-                                            />
-                                        </svg>
-                                    </div>
-
-                                    <div>
-                                        <strong>
-                                            #{{
-                                                notification.appointment
-                                                    .id
-                                            }}
-                                        </strong>
-
-                                        <span>
-                                            {{
-                                                notification.appointment
-                                                    ?.shop
-                                                    ?.name
-                                                ||
-                                                'Shop unavailable'
-                                            }}
-                                        </span>
-                                    </div>
+                                    <span>
+                                        {{
+                                            notification.appointment
+                                                ?.shop?.name ||
+                                            'Shop unavailable'
+                                        }}
+                                    </span>
                                 </div>
 
-                                <span
-                                    v-else
-                                    class="sms-no-appointment"
-                                >
+                                <span v-else>
                                     —
                                 </span>
                             </td>
-
 
                             <!-- STATUS -->
 
                             <td>
                                 <span
-                                    class="status-badge sms-status-badge"
+                                    class="status-badge sms-status"
                                     :class="
                                         statusClass(
                                             notification.status
                                         )
                                     "
                                 >
-                                    <span class="status-dot" />
+                                    <span class="sms-status-dot"></span>
 
                                     {{
-                                        notification.status_label
-                                        ||
+                                        notification.status_label ||
                                         humanize(
                                             notification.status
                                         )
@@ -2159,168 +1250,77 @@ onMounted(() => {
                                 </span>
                             </td>
 
-
                             <!-- FAILURE -->
 
                             <td>
-                                <div class="failure-cell">
+                                <div class="sms-failure">
                                     <span
-                                        v-if="
-                                            notification.failure_kind
-                                        "
-                                        class="failure-badge"
+                                        v-if="notification.failure_kind"
+                                        class="sms-failure-badge"
                                         :class="
                                             statusClass(
                                                 notification.failure_kind
                                             )
                                         "
                                     >
-                                        <svg
-                                            viewBox="0 0 24 24"
-                                            aria-hidden="true"
-                                        >
-                                            <path
-                                                v-if="
-                                                    notification.failure_kind
-                                                    === 'definite'
-                                                "
-                                                d="M9 9l6 6M15 9l-6 6"
-                                            />
-
-                                            <path
-                                                v-else
-                                                d="M12 8v5M12 17h.01"
-                                            />
-
-                                            <circle
-                                                v-if="
-                                                    notification.failure_kind
-                                                    !== 'definite'
-                                                "
-                                                cx="12"
-                                                cy="12"
-                                                r="9"
-                                            />
-                                        </svg>
-
                                         {{
-                                            notification.failure_kind_label
-                                            ||
+                                            notification.failure_kind_label ||
                                             humanize(
                                                 notification.failure_kind
                                             )
                                         }}
                                     </span>
 
-                                    <span
-                                        v-else
-                                        class="no-failure"
-                                    >
+                                    <span v-else>
                                         —
                                     </span>
 
-
                                     <span
-                                        v-if="
-                                            notification.can_retry
-                                        "
-                                        class="retry-eligible"
+                                        v-if="notification.can_retry"
+                                        class="sms-retry-badge"
                                     >
-                                        <svg
-                                            viewBox="0 0 24 24"
-                                            aria-hidden="true"
-                                        >
-                                            <path
-                                                d="M4 4v6h6"
-                                            />
-
-                                            <path
-                                                d="M5.5 15a8 8 0 102-8"
-                                            />
-                                        </svg>
-
                                         Safe to retry
                                     </span>
                                 </div>
                             </td>
 
-
                             <!-- ATTEMPTS -->
 
                             <td>
-                                <div class="attempts-cell">
-                                    <span class="attempts-icon">
-                                        <svg
-                                            viewBox="0 0 24 24"
-                                            aria-hidden="true"
-                                        >
-                                            <path
-                                                d="M4 4v6h6"
-                                            />
-
-                                            <path
-                                                d="M5.5 15a8 8 0 102-8"
-                                            />
-                                        </svg>
-                                    </span>
-
-                                    <strong>
-                                        {{
-                                            formatNumber(
-                                                notification.attempts
-                                                ?? 0
-                                            )
-                                        }}
-                                    </strong>
-                                </div>
+                                <strong>
+                                    {{
+                                        formatNumber(
+                                            notification.attempts ?? 0
+                                        )
+                                    }}
+                                </strong>
                             </td>
-
 
                             <!-- CREATED -->
 
                             <td>
-                                <div class="created-cell">
-                                    <svg
-                                        viewBox="0 0 24 24"
-                                        aria-hidden="true"
-                                    >
-                                        <circle
-                                            cx="12"
-                                            cy="12"
-                                            r="9"
-                                        />
-
-                                        <path
-                                            d="M12 7v5l3 2"
-                                        />
-                                    </svg>
-
-                                    <span>
-                                        {{
-                                            formatDateTime(
-                                                notification.created_at
-                                            )
-                                        }}
-                                    </span>
-                                </div>
+                                <span class="sms-date">
+                                    {{
+                                        formatDateTime(
+                                            notification.created_at
+                                        )
+                                    }}
+                                </span>
                             </td>
-
 
                             <!-- ACTION -->
 
-                            <td class="actions-cell">
+                            <td>
                                 <button
                                     type="button"
-                                    class="view-button sms-view-button"
+                                    class="view-button sms-view"
                                     @click="
                                         openNotification(
                                             notification
                                         )
                                     "
                                 >
-                                    <span>
-                                        View
-                                    </span>
+                                    View
 
                                     <svg
                                         viewBox="0 0 24 24"
@@ -2337,142 +1337,73 @@ onMounted(() => {
                 </table>
             </div>
 
-
-            <!-- ========================================================
+            <!-- =========================================
                  PAGINATION
-                 ======================================================== -->
+                 ========================================= -->
 
             <div
-                v-if="
-                    pagination.total > 0
-                "
+                v-if="pagination.total > 0"
                 class="pagination sms-pagination"
             >
-                <div class="pagination-summary">
-                    <span>
-                        Showing
-                    </span>
-
+                <div class="sms-pagination-summary">
+                    Showing
+                    <strong>{{ firstResult }}</strong>
+                    –
+                    <strong>{{ lastResult }}</strong>
+                    of
                     <strong>
-                        {{ firstResult }}
+                        {{ formatNumber(pagination.total) }}
                     </strong>
-
-                    <span>
-                        –
-                    </span>
-
-                    <strong>
-                        {{ lastResult }}
-                    </strong>
-
-                    <span>
-                        of
-                    </span>
-
-                    <strong>
-                        {{
-                            formatNumber(
-                                pagination.total
-                            )
-                        }}
-                    </strong>
-
-                    <span>
-                        SMS records
-                    </span>
+                    SMS records
                 </div>
-
 
                 <div class="pagination-buttons">
                     <button
                         type="button"
-                        class="page-button pagination-arrow"
+                        class="page-button"
                         :disabled="
-                            pagination.current_page
-                                <= 1
-                            ||
-                            isLoading
+                            isLoading ||
+                            pagination.current_page <= 1
                         "
                         @click="
                             changePage(
-                                pagination.current_page
-                                - 1
+                                pagination.current_page - 1
                             )
                         "
                     >
-                        <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <path
-                                d="M15 18l-6-6 6-6"
-                            />
-                        </svg>
-
-                        <span>
-                            Previous
-                        </span>
+                        Previous
                     </button>
 
-
                     <button
-                        v-for="
-                            page
-                            in visiblePages
-                        "
-                        :key="
-                            page
-                        "
+                        v-for="page in visiblePages"
+                        :key="page"
                         type="button"
                         class="page-button"
                         :class="{
                             active:
-                                page
-                                ===
-                                pagination.current_page,
+                                page === pagination.current_page,
                         }"
-                        :disabled="
-                            isLoading
-                        "
-                        @click="
-                            changePage(
-                                page
-                            )
-                        "
+                        :disabled="isLoading"
+                        @click="changePage(page)"
                     >
                         {{ page }}
                     </button>
 
-
                     <button
                         type="button"
-                        class="page-button pagination-arrow"
+                        class="page-button"
                         :disabled="
-                            pagination.current_page
-                                >=
+                            isLoading ||
+                            pagination.current_page >=
                                 pagination.last_page
-                            ||
-                            isLoading
                         "
                         @click="
                             changePage(
-                                pagination.current_page
-                                + 1
+                                pagination.current_page + 1
                             )
                         "
                     >
-                        <span>
-                            Next
-                        </span>
-
-                        <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <path
-                                d="M9 18l6-6-6-6"
-                            />
-                        </svg>
+                        Next
                     </button>
                 </div>
             </div>
@@ -2480,1997 +1411,759 @@ onMounted(() => {
     </div>
 </template>
 
-
 <style scoped src="./admin-page.css"></style>
 
 <style scoped>
-/*
-|--------------------------------------------------------------------------
-| PAGE
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================
+   PAGE LAYOUT
+   ========================================================== */
 
 .sms-page {
     display: flex;
     flex-direction: column;
-
     gap: 14px;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| INTRODUCTION
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================
+   PAGE HEADER
+   ========================================================== */
 
 .sms-intro {
-    min-height: 132px;
-
+    min-height: 126px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-
     gap: 24px;
-
-    padding:
-        20px
-        22px;
-
-    border:
-        1px solid
-        var(--sh-border);
-
-    border-radius:
-        var(--sh-radius-xl);
-
+    padding: 20px 22px;
+    border: 1px solid var(--sh-border);
+    border-radius: var(--sh-radius-xl);
     background:
         radial-gradient(
             circle at 94% 10%,
-            rgba(
-                214,
-                154,
-                45,
-                0.07
-            ),
-            transparent 27%
+            rgba(214,154,45,.07),
+            transparent 26%
         ),
         var(--sh-surface);
-
-    box-shadow:
-        var(--sh-shadow-sm);
+    box-shadow: var(--sh-shadow-sm);
 }
 
 .sms-intro-copy {
     min-width: 0;
-
     flex: 1;
 }
 
 .sms-intro-label {
-    width: fit-content;
-
     display: flex;
     align-items: center;
-
     gap: 7px;
-
     margin-bottom: 5px;
-
-    color:
-        var(--sh-accent);
-
-    font-size: 8.5px;
+    color: var(--sh-accent);
+    font-size: 9px;
     font-weight: 800;
-
     letter-spacing: 1.1px;
-
-    text-transform:
-        uppercase;
+    text-transform: uppercase;
 }
 
 .sms-intro-dot {
     width: 6px;
     height: 6px;
-
-    border-radius: 999px;
-
-    background:
-        var(--sh-accent);
-
-    box-shadow:
-        0 0 0 4px
-        rgba(
-            214,
-            154,
-            45,
-            0.08
-        );
+    border-radius: 50%;
+    background: var(--sh-accent);
+    box-shadow: 0 0 0 4px rgba(214,154,45,.08);
 }
 
 .sms-intro h2 {
     margin: 0;
-
-    color:
-        var(--sh-text);
-
+    color: var(--sh-text);
     font-size: 22px;
-    font-weight: 800;
-
     line-height: 29px;
-
-    letter-spacing:
-        -0.55px;
+    font-weight: 800;
+    letter-spacing: -.55px;
 }
 
 .sms-intro p {
-    max-width: 690px;
-
-    margin:
-        5px
-        0
-        0;
-
-    color:
-        var(--sh-text-3);
-
-    font-size: 10.5px;
-
+    max-width: 650px;
+    margin: 5px 0 0;
+    color: var(--sh-text-3);
+    font-size: 11px;
     line-height: 17px;
 }
 
 .sms-intro-actions {
     flex: 0 0 auto;
-
     display: flex;
     align-items: center;
-
     gap: 10px;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| TOTAL CARD
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================
+   TOTAL RECORD COUNT
+   ========================================================== */
 
 .sms-total-card {
-    min-width: 165px;
-
+    min-width: 162px;
     display: flex;
     align-items: center;
-
     gap: 10px;
-
-    padding:
-        10px
-        12px;
-
-    border:
-        1px solid
-        var(--sh-border);
-
+    padding: 10px 12px;
+    border: 1px solid var(--sh-border);
     border-radius: 12px;
-
-    background:
-        var(--sh-surface-muted);
+    background: var(--sh-surface-muted);
 }
 
-.sms-total-icon {
+.sms-total-icon,
+.sms-heading-icon {
     width: 38px;
     height: 38px;
-
     flex: 0 0 38px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
+    display: grid;
+    place-items: center;
     border-radius: 10px;
-
-    background:
-        var(--sh-accent-soft);
-
-    color:
-        var(--sh-accent);
+    background: var(--sh-accent-soft);
+    color: var(--sh-accent);
 }
 
-.sms-total-icon svg {
+.sms-total-icon svg,
+.sms-heading-icon svg {
     width: 18px;
     height: 18px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.7;
-
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-.sms-total-card
-> div:last-child {
+.sms-total-card > div:last-child {
     display: flex;
     flex-direction: column;
-
-    gap: 1px;
+    gap: 2px;
 }
 
 .sms-total-card span {
-    color:
-        var(--sh-text-3);
-
-    font-size: 8.5px;
-    font-weight: 600;
+    color: var(--sh-text-3);
+    font-size: 9px;
 }
 
 .sms-total-card strong {
-    color:
-        var(--sh-text);
-
-    font-size: 17px;
+    color: var(--sh-text);
+    font-size: 18px;
     font-weight: 800;
 }
 
 .sms-refresh-button {
-    min-height: 48px;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
 }
 
 .sms-refresh-button svg {
-    width: 15px;
-    height: 15px;
-
-    fill: none;
-
-    stroke:
-        currentColor;
-
-    stroke-width: 1.8;
-
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    width: 16px;
+    height: 16px;
 }
 
+/* ==========================================================
+   TEXTBEE INFORMATION
+   ========================================================== */
 
-/*
-|--------------------------------------------------------------------------
-| OPERATIONS NOTE
-|--------------------------------------------------------------------------
-*/
-
-.sms-operations-note {
+.sms-info-banner {
     display: flex;
-    align-items: center;
-
+    align-items: flex-start;
     gap: 11px;
-
-    padding:
-        12px
-        14px;
-
-    border:
-        1px solid
-        #f0dfb9;
-
-    border-radius: 13px;
-
-    background:
-        linear-gradient(
-            135deg,
-            var(--sh-warning-bg),
-            #fffdf8
-        );
-
-    box-shadow:
-        var(--sh-shadow-sm);
+    padding: 13px 15px;
+    border: 1px solid #d9e7f2;
+    border-radius: 12px;
+    background: #f3f7fb;
 }
 
-.sms-operations-icon {
-    width: 37px;
-    height: 37px;
-
-    flex: 0 0 37px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
+.sms-info-icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    display: grid;
+    place-items: center;
     border-radius: 10px;
-
-    background:
-        #ffffff;
-
-    color:
-        var(--sh-warning);
+    background: #ffffff;
+    color: var(--sh-info);
 }
 
-.sms-operations-icon svg {
+.sms-info-icon svg {
     width: 18px;
     height: 18px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.7;
-
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-.sms-operations-copy {
+.sms-info-banner > div:last-child {
     min-width: 0;
-
     flex: 1;
 }
 
-.sms-operations-copy strong {
-    display: block;
-
-    color:
-        #80591f;
-
-    font-size: 9.5px;
+.sms-info-banner strong {
+    color: #38546c;
+    font-size: 11px;
 }
 
-.sms-operations-copy p {
-    max-width: 850px;
-
-    margin:
-        3px
-        0
-        0;
-
-    color:
-        #99733b;
-
-    font-size: 8.5px;
-
-    line-height: 14px;
+.sms-info-banner p {
+    margin: 4px 0 0;
+    color: #627b91;
+    font-size: 10px;
+    line-height: 16px;
 }
 
-.sms-monitoring-badge {
-    min-height: 25px;
-
-    display: inline-flex;
-    align-items: center;
-
-    padding:
-        0
-        9px;
-
-    border:
-        1px solid
-        #ead8ad;
-
-    border-radius: 999px;
-
-    background:
-        #ffffff;
-
-    color:
-        var(--sh-warning);
-
-    font-size: 7.5px;
-    font-weight: 800;
-
-    letter-spacing: 0.5px;
-
-    text-transform: uppercase;
-
-    white-space: nowrap;
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| SUMMARY GRID
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================
+   SMS STATISTICS
+   ========================================================== */
 
 .sms-summary-grid {
     display: grid;
-
-    grid-template-columns:
-        repeat(
-            4,
-            minmax(
-                0,
-                1fr
-            )
-        );
-
-    gap: 11px;
+    grid-template-columns: repeat(
+        4,
+        minmax(0, 1fr)
+    );
+    gap: 12px;
 }
 
 .sms-summary-card {
     min-width: 0;
-
-    min-height: 92px;
-
+    min-height: 102px;
     display: flex;
     align-items: center;
-
     gap: 11px;
-
-    padding:
-        13px
-        14px;
-
-    border:
-        1px solid
-        var(--sh-border);
-
-    border-radius: 13px;
-
-    background:
-        var(--sh-surface);
-
-    box-shadow:
-        var(--sh-shadow-sm);
-
-    transition:
-        transform 0.15s ease,
-        box-shadow 0.15s ease;
-}
-
-.sms-summary-card:hover {
-    transform:
-        translateY(
-            -1px
-        );
-
-    box-shadow:
-        var(--sh-shadow-card);
-}
-
-.sms-summary-card.retry-card {
-    border-color:
-        #d4ebdf;
-
-    background:
-        linear-gradient(
-            145deg,
-            #ffffff,
-            var(--sh-success-bg)
-        );
-}
-
-.sms-summary-card.uncertain-card {
-    border-color:
-        #f0dfb9;
-
-    background:
-        linear-gradient(
-            145deg,
-            #ffffff,
-            var(--sh-warning-bg)
-        );
+    padding: 14px;
+    border: 1px solid var(--sh-border);
+    border-radius: 14px;
+    background: var(--sh-surface);
+    box-shadow: var(--sh-shadow-sm);
 }
 
 .sms-summary-icon {
-    width: 40px;
-    height: 40px;
-
-    flex: 0 0 40px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 11px;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: var(--sh-accent-soft);
+    color: var(--sh-accent);
 }
 
 .sms-summary-icon svg {
-    width: 18px;
-    height: 18px;
-
+    width: 21px;
+    height: 21px;
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.7;
-
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-.sms-summary-icon.total {
-    background:
-        var(--sh-accent-soft);
-
-    color:
-        var(--sh-accent);
-}
-
 .sms-summary-icon.accepted,
-.sms-summary-icon.retry {
-    background:
-        var(--sh-success-bg);
-
-    color:
-        var(--sh-success);
+.sms-summary-icon.safe_to_retry {
+    background: var(--sh-success-bg);
+    color: var(--sh-success);
 }
 
 .sms-summary-icon.pending,
-.sms-summary-icon.uncertain {
-    background:
-        var(--sh-warning-bg);
-
-    color:
-        var(--sh-warning);
+.sms-summary-icon.uncertain_failures {
+    background: var(--sh-warning-bg);
+    color: var(--sh-warning);
 }
 
 .sms-summary-icon.processing {
-    background:
-        var(--sh-info-bg);
-
-    color:
-        var(--sh-info);
+    background: var(--sh-info-bg);
+    color: var(--sh-info);
 }
 
 .sms-summary-icon.failed {
-    background:
-        var(--sh-danger-bg);
-
-    color:
-        var(--sh-danger);
+    background: var(--sh-danger-bg);
+    color: var(--sh-danger);
 }
 
 .sms-summary-icon.skipped {
-    background:
-        #f1f3f5;
-
-    color:
-        var(--sh-text-3);
+    background: var(--sh-surface-muted);
+    color: var(--sh-text-3);
 }
 
 .sms-summary-copy {
     min-width: 0;
-
     display: flex;
     flex-direction: column;
+    gap: 3px;
 }
 
 .sms-summary-copy span {
-    color:
-        var(--sh-text-3);
-
-    font-size: 8.5px;
+    color: var(--sh-text-3);
+    font-size: 9px;
     font-weight: 700;
 }
 
 .sms-summary-copy strong {
-    margin-top: 2px;
-
-    color:
-        var(--sh-text);
-
-    font-size: 20px;
+    color: var(--sh-text);
+    font-size: 23px;
+    line-height: 27px;
     font-weight: 800;
-
-    line-height: 24px;
 }
 
 .sms-summary-copy small {
-    margin-top: 2px;
-
-    color:
-        var(--sh-text-3);
-
-    font-size: 7.8px;
-
-    line-height: 12px;
+    color: var(--sh-text-3);
+    font-size: 9px;
+    line-height: 13px;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| FILTER PANEL
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================
+   FILTER CARD
+   ========================================================== */
 
 .sms-filter-card {
-    padding: 0;
+    padding: 18px;
+    margin-bottom: 0;
 }
 
-.filter-card-heading {
-    min-height: 66px;
-
+.sms-section-heading,
+.sms-table-heading {
     display: flex;
     align-items: center;
     justify-content: space-between;
-
-    gap: 14px;
-
-    padding:
-        13px
-        16px;
-
-    border-bottom:
-        1px solid
-        var(--sh-border);
+    gap: 12px;
 }
 
-.filter-heading-left {
+.sms-section-heading {
+    margin-bottom: 16px;
+}
+
+.sms-heading-left {
+    display: flex;
+    align-items: center;
+    gap: 11px;
     min-width: 0;
-
-    display: flex;
-    align-items: center;
-
-    gap: 10px;
 }
 
-.filter-heading-icon {
-    width: 36px;
-    height: 36px;
-
-    flex: 0 0 36px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 10px;
-
-    background:
-        var(--sh-surface-muted);
-
-    color:
-        var(--sh-text-2);
-}
-
-.filter-heading-icon svg {
-    width: 17px;
-    height: 17px;
-
-    fill: none;
-
-    stroke:
-        currentColor;
-
-    stroke-width: 1.7;
-
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.filter-heading-left h3 {
+.sms-section-heading h3,
+.sms-table-heading h3 {
     margin: 0;
-
-    color:
-        var(--sh-text);
-
-    font-size: 12px;
+    color: var(--sh-text);
+    font-size: 14px;
     font-weight: 800;
 }
 
-.filter-heading-left p {
-    margin:
-        2px
-        0
-        0;
-
-    color:
-        var(--sh-text-3);
-
-    font-size: 8.5px;
+.sms-section-heading p,
+.sms-table-heading p {
+    margin: 3px 0 0;
+    color: var(--sh-text-3);
+    font-size: 10px;
+    line-height: 15px;
 }
 
-.active-filter-count {
-    min-height: 25px;
-
+.sms-filter-count {
     display: inline-flex;
     align-items: center;
-
-    padding:
-        0
-        8px;
-
-    border:
-        1px solid
-        #eadfbf;
-
+    min-height: 25px;
+    padding: 0 10px;
+    background: var(--sh-accent-soft);
     border-radius: 999px;
-
-    background:
-        var(--sh-accent-soft);
-
-    color:
-        #845d1d;
-
-    font-size: 8px;
+    color: var(--sh-accent);
+    font-size: 9px;
     font-weight: 800;
-
     white-space: nowrap;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| FILTERS
-|--------------------------------------------------------------------------
-*/
-
 .sms-filters {
     display: grid;
-
-    grid-template-columns:
-        minmax(
-            250px,
-            1.7fr
-        )
-        repeat(
-            3,
-            minmax(
-                145px,
-                1fr
-            )
-        );
-
+    grid-template-columns: repeat(
+        4,
+        minmax(0, 1fr)
+    );
+    gap: 12px;
     align-items: end;
-
-    gap: 11px;
-
-    padding:
-        15px
-        16px
-        16px;
 }
 
 .sms-search-field {
-    flex: none;
+    grid-column: span 2;
 }
 
 .sms-filter-actions {
-    grid-column:
-        span 2;
-
-    align-items: center;
+    grid-column: span 2;
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
 }
 
-.sms-filter-actions
-.primary-button,
-.sms-filter-actions
-.secondary-button {
+.sms-filter-actions button {
     min-height: 42px;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| ERROR
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================
+   ERROR HANDLING
+   ========================================================== */
 
 .sms-error {
-    align-items: center;
-
-    margin: 0;
-}
-
-.sms-error-icon {
-    width: 38px;
-    height: 38px;
-
-    flex: 0 0 38px;
-
     display: flex;
     align-items: center;
-    justify-content: center;
-
-    border-radius: 10px;
-
-    background:
-        rgba(
-            169,
-            79,
-            79,
-            0.08
-        );
-}
-
-.sms-error-icon svg {
-    width: 18px;
-    height: 18px;
-
-    fill: none;
-
-    stroke:
-        currentColor;
-
-    stroke-width: 1.8;
-
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    gap: 12px;
 }
 
 .sms-error-copy {
     min-width: 0;
-
     flex: 1;
 }
 
 .sms-error-copy strong {
     display: block;
-
-    font-size: 10px;
 }
 
 .sms-error-copy p {
-    margin:
-        2px
-        0
-        0;
+    margin: 3px 0 0;
 }
 
+/* ==========================================================
+   TABLE CARD
+   ========================================================== */
 
-/*
-|--------------------------------------------------------------------------
-| TABLE HEADER
-|--------------------------------------------------------------------------
-*/
-
-.sms-table-header {
-    padding:
-        13px
-        16px;
+.sms-card {
+    overflow: hidden;
+    border: 1px solid var(--sh-border);
+    border-radius: var(--sh-radius-xl);
+    background: var(--sh-surface);
+    box-shadow: var(--sh-shadow-sm);
 }
 
-.table-heading {
-    min-width: 0;
+.sms-table-heading {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--sh-border);
+}
 
+.sms-table-actions {
     display: flex;
     align-items: center;
-
-    gap: 10px;
+    gap: 12px;
 }
 
-.table-heading-icon {
-    width: 36px;
-    height: 36px;
-
-    flex: 0 0 36px;
-
+.sms-per-page {
     display: flex;
     align-items: center;
-    justify-content: center;
-
-    border-radius: 10px;
-
-    background:
-        var(--sh-accent-soft);
-
-    color:
-        var(--sh-accent);
+    gap: 7px;
 }
 
-.table-heading-icon svg {
-    width: 17px;
-    height: 17px;
-
-    fill: none;
-
-    stroke:
-        currentColor;
-
-    stroke-width: 1.7;
-
-    stroke-linecap: round;
-    stroke-linejoin: round;
+.sms-per-page label {
+    margin: 0;
 }
 
-.table-header-actions {
-    display: flex;
-    align-items: center;
-
-    gap: 10px;
+.sms-per-page select {
+    min-width: 72px;
 }
 
-.table-filter-status {
-    display: inline-flex;
-    align-items: center;
-
-    gap: 6px;
-
-    color:
-        var(--sh-text-3);
-
-    font-size: 8.5px;
-    font-weight: 700;
-}
-
-.table-filter-dot {
-    width: 6px;
-    height: 6px;
-
-    border-radius: 999px;
-
-    background:
-        var(--sh-accent);
-}
-
-.per-page {
-    display: flex;
-    align-items: center;
-
-    gap: 6px;
-}
-
-.per-page label {
-    color:
-        var(--sh-text-3);
-
-    font-size: 8.5px;
-    font-weight: 700;
-}
-
-.per-page select {
-    width: 69px;
-
-    min-height: 34px;
-
-    padding:
-        5px
-        8px;
-
-    font-size: 9px;
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| TABLE
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================
+   TABLE CONTENT
+   ========================================================== */
 
 .sms-table-wrapper {
-    transition:
-        opacity
-        0.16s ease;
-}
-
-.table-refreshing {
-    opacity: 0.55;
-
-    pointer-events: none;
+    overflow-x: auto;
 }
 
 .sms-table-wrapper table {
-    min-width: 1320px;
+    width: 100%;
+    border-collapse: collapse;
+    white-space: nowrap;
 }
 
-.sms-table-row {
-    cursor: default;
+.sms-table-wrapper th,
+.sms-table-wrapper td {
+    padding: 12px 13px;
 }
 
+.sms-table-wrapper tbody tr:hover {
+    background: #fafbfc;
+}
 
-/*
-|--------------------------------------------------------------------------
-| NOTIFICATION
-|--------------------------------------------------------------------------
-*/
+.sms-refreshing {
+    opacity: .65;
+}
 
-.notification-cell {
-    min-width: 175px;
+/* ==========================================================
+   TABLE CELLS
+   ========================================================== */
 
+.sms-cell-with-icon {
     display: flex;
     align-items: center;
-
     gap: 9px;
 }
 
-.notification-icon {
+.sms-record-icon,
+.sms-avatar {
     width: 34px;
     height: 34px;
-
     flex: 0 0 34px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 9px;
-
-    background:
-        var(--sh-accent-soft);
-
-    color:
-        var(--sh-accent);
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: var(--sh-info-bg);
+    color: var(--sh-info);
 }
 
-.notification-icon svg {
-    width: 16px;
-    height: 16px;
-
+.sms-record-icon svg {
+    width: 17px;
+    height: 17px;
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.7;
-
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-.notification-copy {
-    min-width: 0;
-
-    display: flex;
-    flex-direction: column;
-
-    gap: 2px;
-}
-
-.notification-copy strong {
-    color:
-        var(--sh-text);
-
-    font-family:
-        ui-monospace,
-        SFMono-Regular,
-        Menlo,
-        Monaco,
-        Consolas,
-        monospace;
-
-    font-size: 9.5px;
+.sms-avatar {
+    background: var(--sh-accent-soft);
+    color: var(--sh-accent);
     font-weight: 800;
+    font-size: 12px;
 }
 
-.notification-copy span {
-    max-width: 160px;
-
-    overflow: hidden;
-
-    color:
-        var(--sh-text-3);
-
-    font-size: 8px;
-
-    text-overflow: ellipsis;
-
-    white-space: nowrap;
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| RECIPIENT
-|--------------------------------------------------------------------------
-*/
-
-.recipient-cell {
-    min-width: 145px;
-
+.sms-stacked {
+    min-width: 0;
     display: flex;
     flex-direction: column;
-
     gap: 3px;
 }
 
-.recipient-number {
-    display: flex;
-    align-items: center;
-
-    gap: 5px;
-}
-
-.recipient-number svg {
-    width: 12px;
-    height: 12px;
-
-    flex: 0 0 12px;
-
-    fill: none;
-
-    stroke:
-        var(--sh-text-3);
-
-    stroke-width: 1.7;
-
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.recipient-number strong {
-    color:
-        var(--sh-text-2);
-
-    font-size: 9px;
-    font-weight: 750;
-
-    white-space: nowrap;
-}
-
-.recipient-cell > span {
-    padding-left: 17px;
-
-    color:
-        var(--sh-text-3);
-
-    font-size: 8px;
-
-    text-transform: capitalize;
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| USER
-|--------------------------------------------------------------------------
-*/
-
-.sms-user-cell {
-    min-width: 185px;
-
-    display: flex;
-    align-items: center;
-
-    gap: 8px;
-}
-
-.sms-user-avatar {
-    width: 32px;
-    height: 32px;
-
-    flex: 0 0 32px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 9px;
-
-    background:
-        var(--sh-info-bg);
-
-    color:
-        var(--sh-info);
-
-    font-size: 9px;
-    font-weight: 800;
-}
-
-.sms-user-avatar.system {
-    background:
-        var(--sh-surface-muted);
-
-    color:
-        var(--sh-text-3);
-}
-
-.sms-user-copy {
-    min-width: 0;
-
-    display: flex;
-    flex-direction: column;
-
-    gap: 2px;
-}
-
-.sms-user-copy strong,
-.sms-user-copy span {
-    max-width: 165px;
-
+.sms-stacked strong {
+    max-width: 190px;
     overflow: hidden;
-
     text-overflow: ellipsis;
-
-    white-space: nowrap;
+    color: var(--sh-text);
+    font-size: 10px;
 }
 
-.sms-user-copy strong {
-    color:
-        var(--sh-text-2);
-
-    font-size: 9px;
-}
-
-.sms-user-copy span {
-    color:
-        var(--sh-text-3);
-
-    font-size: 8px;
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| APPOINTMENT
-|--------------------------------------------------------------------------
-*/
-
-.sms-appointment-cell {
-    min-width: 150px;
-
-    display: flex;
-    align-items: center;
-
-    gap: 8px;
-}
-
-.sms-appointment-icon {
-    width: 30px;
-    height: 30px;
-
-    flex: 0 0 30px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 8px;
-
-    background:
-        var(--sh-purple-bg);
-
-    color:
-        var(--sh-purple);
-}
-
-.sms-appointment-icon svg {
-    width: 14px;
-    height: 14px;
-
-    fill: none;
-
-    stroke:
-        currentColor;
-
-    stroke-width: 1.7;
-
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.sms-appointment-cell
-> div:last-child {
-    min-width: 0;
-
-    display: flex;
-    flex-direction: column;
-
-    gap: 2px;
-}
-
-.sms-appointment-cell strong {
-    color:
-        var(--sh-text);
-
-    font-family:
-        ui-monospace,
-        SFMono-Regular,
-        Menlo,
-        Monaco,
-        Consolas,
-        monospace;
-
-    font-size: 9px;
-}
-
-.sms-appointment-cell span {
-    max-width: 130px;
-
+.sms-stacked span {
+    max-width: 190px;
     overflow: hidden;
-
-    color:
-        var(--sh-text-3);
-
-    font-size: 8px;
-
     text-overflow: ellipsis;
-
-    white-space: nowrap;
+    color: var(--sh-text-3);
+    font-size: 9px;
 }
 
-.sms-no-appointment {
-    color:
-        #b0b6be;
+.sms-stacked .sms-legacy-provider {
+    color: #956523;
+    font-weight: 700;
 }
 
+/* ==========================================================
+   STATUS AND FAILURE
+   ========================================================== */
 
-/*
-|--------------------------------------------------------------------------
-| STATUS
-|--------------------------------------------------------------------------
-*/
-
-.sms-status-badge {
-    gap: 5px;
+.sms-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.status-dot {
-    width: 5px;
-    height: 5px;
-
-    flex: 0 0 5px;
-
-    border-radius: 999px;
-
-    background:
-        currentColor;
+.sms-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
 }
 
-.sms-status-badge.pending {
-    border-color:
-        #f0dfb9 !important;
-
-    background:
-        var(--sh-warning-bg) !important;
-
-    color:
-        var(--sh-warning) !important;
-}
-
-.sms-status-badge.processing {
-    border-color:
-        #d9e4f8 !important;
-
-    background:
-        var(--sh-info-bg) !important;
-
-    color:
-        var(--sh-info) !important;
-}
-
-.sms-status-badge.accepted {
-    border-color:
-        #d4ebdf !important;
-
-    background:
-        var(--sh-success-bg) !important;
-
-    color:
-        var(--sh-success) !important;
-}
-
-.sms-status-badge.failed {
-    border-color:
-        #eed3d3 !important;
-
-    background:
-        var(--sh-danger-bg) !important;
-
-    color:
-        var(--sh-danger) !important;
-}
-
-.sms-status-badge.skipped {
-    border-color:
-        #e1e5ea !important;
-
-    background:
-        #f3f5f7 !important;
-
-    color:
-        #6f7884 !important;
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| FAILURE
-|--------------------------------------------------------------------------
-*/
-
-.failure-cell {
-    min-width: 150px;
-
+.sms-failure {
     display: flex;
     align-items: flex-start;
     flex-direction: column;
-
     gap: 5px;
 }
 
-.failure-badge {
-    min-height: 24px;
-
+.sms-failure-badge,
+.sms-retry-badge {
     display: inline-flex;
     align-items: center;
-
-    gap: 5px;
-
-    padding:
-        0
-        7px;
-
-    border:
-        1px solid
-        transparent;
-
+    min-height: 22px;
     border-radius: 999px;
-
-    font-size: 7.5px;
-    font-weight: 750;
-
-    white-space: nowrap;
-}
-
-.failure-badge svg {
-    width: 11px;
-    height: 11px;
-
-    fill: none;
-
-    stroke:
-        currentColor;
-
-    stroke-width: 1.8;
-
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.failure-badge.definite {
-    border-color:
-        #eed3d3;
-
-    background:
-        var(--sh-danger-bg);
-
-    color:
-        var(--sh-danger);
-}
-
-.failure-badge.uncertain {
-    border-color:
-        #f0dfb9;
-
-    background:
-        var(--sh-warning-bg);
-
-    color:
-        var(--sh-warning);
-}
-
-.no-failure {
-    color:
-        #b0b6be;
-}
-
-.retry-eligible {
-    display: inline-flex;
-    align-items: center;
-
-    gap: 4px;
-
-    color:
-        var(--sh-success);
-
-    font-size: 7.5px;
-    font-weight: 750;
-}
-
-.retry-eligible svg {
-    width: 11px;
-    height: 11px;
-
-    fill: none;
-
-    stroke:
-        currentColor;
-
-    stroke-width: 1.8;
-
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| ATTEMPTS
-|--------------------------------------------------------------------------
-*/
-
-.attempts-cell {
-    display: inline-flex;
-    align-items: center;
-
-    gap: 6px;
-}
-
-.attempts-icon {
-    width: 27px;
-    height: 27px;
-
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 8px;
-
-    background:
-        var(--sh-surface-muted);
-
-    color:
-        var(--sh-text-3);
-}
-
-.attempts-icon svg {
-    width: 12px;
-    height: 12px;
-
-    fill: none;
-
-    stroke:
-        currentColor;
-
-    stroke-width: 1.8;
-
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.attempts-cell strong {
-    color:
-        var(--sh-text-2);
-
+    padding: 0 7px;
     font-size: 9px;
-    font-weight: 800;
+    font-weight: 700;
+    background: var(--sh-danger-bg);
+    color: var(--sh-danger);
 }
 
+.sms-failure-badge.uncertain {
+    background: var(--sh-warning-bg);
+    color: var(--sh-warning);
+}
 
-/*
-|--------------------------------------------------------------------------
-| CREATED
-|--------------------------------------------------------------------------
-*/
+.sms-retry-badge {
+    background: var(--sh-success-bg);
+    color: var(--sh-success);
+}
 
-.created-cell {
-    min-width: 145px;
+.sms-date {
+    font-size: 10px;
+    color: var(--sh-text-3);
+}
 
-    display: flex;
+.sms-view {
+    display: inline-flex;
     align-items: center;
-
-    gap: 6px;
-
-    color:
-        var(--sh-text-2);
+    gap: 5px;
 }
 
-.created-cell svg {
-    width: 12px;
-    height: 12px;
-
-    flex: 0 0 12px;
-
+.sms-view svg {
+    width: 13px;
+    height: 13px;
     fill: none;
-
-    stroke:
-        var(--sh-text-3);
-
+    stroke: currentColor;
     stroke-width: 1.7;
-
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-.created-cell span {
-    font-size: 8.5px;
+/* ==========================================================
+   LOADING AND EMPTY STATES
+   ========================================================== */
 
-    white-space: nowrap;
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| VIEW
-|--------------------------------------------------------------------------
-*/
-
-.table-actions-heading {
-    text-align:
-        right !important;
-}
-
-.sms-view-button {
-    min-height: 34px;
-
-    padding:
-        0
-        10px;
-}
-
-.sms-view-button svg {
-    width: 12px;
-    height: 12px;
-
-    fill: none;
-
-    stroke:
-        currentColor;
-
-    stroke-width: 1.9;
-
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| LOADING
-|--------------------------------------------------------------------------
-*/
-
-.sms-loading-state {
-    min-height: 280px;
-
+.sms-empty {
+    min-height: 220px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-
-    flex-direction: column;
-
-    padding: 30px;
-
+    gap: 9px;
+    padding: 35px;
     text-align: center;
 }
 
-.sms-loading-icon {
+.sms-empty strong {
+    color: var(--sh-text);
+    font-size: 14px;
+}
+
+.sms-empty p {
+    margin: 0;
+    color: var(--sh-text-3);
+    font-size: 10px;
+}
+
+.sms-empty-icon {
     width: 52px;
     height: 52px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    margin-bottom: 11px;
-
+    display: grid;
+    place-items: center;
     border-radius: 15px;
-
-    background:
-        var(--sh-surface-muted);
+    background: var(--sh-accent-soft);
+    color: var(--sh-accent);
 }
 
-.sms-loading-icon
-.spinner {
-    margin: 0;
-}
-
-.sms-loading-state h3 {
-    margin: 0;
-
-    color:
-        var(--sh-text);
-
-    font-size: 12px;
-    font-weight: 800;
-}
-
-.sms-loading-state p {
-    max-width: 340px;
-
-    margin:
-        4px
-        0
-        0;
-
-    color:
-        var(--sh-text-3);
-
-    font-size: 9px;
-
-    line-height: 15px;
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| EMPTY
-|--------------------------------------------------------------------------
-*/
-
-.sms-empty-state {
-    min-height: 280px;
-}
-
-.sms-empty-reset {
-    margin-top: 13px;
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| PAGINATION
-|--------------------------------------------------------------------------
-*/
-
-.sms-pagination {
-    background:
-        #fbfcfd;
-}
-
-.pagination-summary {
-    display: flex;
-    align-items: center;
-
-    gap: 4px;
-
-    color:
-        var(--sh-text-3);
-
-    font-size: 9px;
-}
-
-.pagination-summary strong {
-    color:
-        var(--sh-text-2);
-
-    font-weight: 800;
-}
-
-.pagination-arrow {
-    min-width: auto;
-
-    gap: 5px;
-}
-
-.pagination-arrow svg {
-    width: 12px;
-    height: 12px;
-
+.sms-empty-icon svg {
+    width: 23px;
+    height: 23px;
     fill: none;
-
-    stroke:
-        currentColor;
-
-    stroke-width: 1.9;
-
+    stroke: currentColor;
+    stroke-width: 1.7;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
+.sms-spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--sh-border);
+    border-top-color: var(--sh-accent);
+    border-radius: 50%;
+    animation: sms-rotate .8s linear infinite;
+}
 
-/*
-|--------------------------------------------------------------------------
-| REFRESH ANIMATION
-|--------------------------------------------------------------------------
-*/
+@keyframes sms-rotate {
+    to {
+        transform: rotate(360deg);
+    }
+}
 
 .spinning {
-    animation:
-        sms-spin
-        0.8s
-        linear
-        infinite;
+    animation: sms-rotate .8s linear infinite;
 }
 
-@keyframes sms-spin {
-    to {
-        transform:
-            rotate(
-                360deg
-            );
-    }
+/* ==========================================================
+   PAGINATION
+   ========================================================== */
+
+.sms-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 18px;
+    border-top: 1px solid var(--sh-border);
 }
 
+.sms-pagination-summary {
+    color: var(--sh-text-3);
+    font-size: 10px;
+}
 
-/*
-|--------------------------------------------------------------------------
-| RESPONSIVE
-|--------------------------------------------------------------------------
-*/
+.sms-pagination-summary strong {
+    color: var(--sh-text);
+}
 
-@media (max-width: 1350px) {
+/* ==========================================================
+   RESPONSIVE LAYOUT
+   ========================================================== */
+
+@media (max-width: 1100px) {
     .sms-summary-grid {
-        grid-template-columns:
-            repeat(
-                4,
-                minmax(
-                    0,
-                    1fr
-                )
-            );
+        grid-template-columns: repeat(
+            2,
+            minmax(0, 1fr)
+        );
     }
 
     .sms-filters {
-        grid-template-columns:
-            repeat(
-                3,
-                minmax(
-                    0,
-                    1fr
-                )
-            );
-    }
-
-    .sms-search-field {
-        grid-column:
-            span 2;
-    }
-
-    .sms-filter-actions {
-        grid-column:
-            span 1;
+        grid-template-columns: repeat(
+            3,
+            minmax(0, 1fr)
+        );
     }
 }
 
-
-@media (max-width: 1050px) {
+@media (max-width: 720px) {
     .sms-intro {
-        align-items:
-            flex-start;
-
-        flex-direction:
-            column;
-    }
-
-    .sms-intro-actions {
-        width: 100%;
-    }
-
-    .sms-total-card {
-        flex: 1;
-    }
-
-    .sms-summary-grid {
-        grid-template-columns:
-            repeat(
-                2,
-                minmax(
-                    0,
-                    1fr
-                )
-            );
-    }
-}
-
-
-@media (max-width: 800px) {
-    .sms-filters {
-        grid-template-columns:
-            repeat(
-                2,
-                minmax(
-                    0,
-                    1fr
-                )
-            );
-    }
-
-    .sms-search-field {
-        grid-column:
-            1
-            / -1;
-    }
-
-    .sms-filter-actions {
-        grid-column:
-            1
-            / -1;
-    }
-
-    .sms-table-header {
-        align-items:
-            flex-start;
-
-        flex-direction:
-            column;
-    }
-
-    .table-header-actions {
-        width: 100%;
-
-        justify-content:
-            space-between;
-    }
-}
-
-
-@media (max-width: 680px) {
-    .sms-intro {
-        padding: 17px;
-    }
-
-    .sms-intro h2 {
-        font-size: 19px;
-    }
-
-    .sms-intro-actions {
-        align-items:
-            stretch;
-
-        flex-direction:
-            column;
-    }
-
-    .sms-total-card,
-    .sms-refresh-button {
-        width: 100%;
-    }
-
-    .sms-operations-note {
-        align-items:
-            flex-start;
-
-        flex-wrap: wrap;
-    }
-
-    .sms-operations-copy {
-        flex:
-            1
-            1
-            calc(
-                100% - 50px
-            );
-    }
-
-    .sms-monitoring-badge {
-        margin-left: 48px;
-    }
-
-    .sms-summary-grid {
-        grid-template-columns:
-            1fr;
-    }
-
-    .filter-card-heading {
-        align-items:
-            flex-start;
-    }
-
-    .filter-heading-left {
-        align-items:
-            flex-start;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
     }
 
     .sms-filters {
-        display: flex;
-
-        align-items: stretch;
-
-        flex-direction: column;
-
-        padding: 14px;
+        grid-template-columns: repeat(
+            2,
+            minmax(0, 1fr)
+        );
     }
 
+    .sms-search-field,
     .sms-filter-actions {
-        width: 100%;
-
-        align-items: stretch;
-
-        flex-direction: column;
-    }
-
-    .sms-filter-actions
-    .primary-button,
-    .sms-filter-actions
-    .secondary-button {
-        width: 100%;
-    }
-
-    .sms-error {
-        align-items:
-            flex-start;
-
-        flex-wrap: wrap;
-    }
-
-    .sms-error
-    .retry-button {
-        width: 100%;
+        grid-column: span 2;
     }
 
     .sms-pagination {
-        align-items: stretch;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .sms-summary-grid,
+    .sms-filters {
+        grid-template-columns: 1fr;
     }
 
-    .pagination-summary {
+    .sms-search-field,
+    .sms-filter-actions {
+        grid-column: span 1;
+    }
+
+    .sms-intro-actions {
         flex-wrap: wrap;
-    }
-
-    .pagination-arrow span {
-        display: none;
     }
 }
 </style>

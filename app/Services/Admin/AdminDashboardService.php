@@ -152,6 +152,11 @@ class AdminDashboardService
     }
 
     /**
+     * Count every valid appointment status.
+     *
+     * No-show is a separate terminal status and must
+     * not be omitted from dashboard reporting.
+     *
      * @return array<string, int>
      */
     private function appointmentSummary(): array
@@ -182,6 +187,14 @@ class AdminDashboardService
                     ->where(
                         'status',
                         AppointmentStatus::Completed->value
+                    )
+                    ->count(),
+
+            'no_show' =>
+                Appointment::query()
+                    ->where(
+                        'status',
+                        AppointmentStatus::NoShow->value
                     )
                     ->count(),
 

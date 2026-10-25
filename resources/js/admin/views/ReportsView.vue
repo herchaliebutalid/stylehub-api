@@ -817,12 +817,7 @@ onMounted(() => {
 
         <section class="reports-intro">
             <div class="reports-intro-copy">
-                <div class="reports-label">
-                    <span class="reports-label-dot" />
-
-                    Analytics & reporting
-                </div>
-
+                
                 <h2>
                     Platform performance overview
                 </h2>

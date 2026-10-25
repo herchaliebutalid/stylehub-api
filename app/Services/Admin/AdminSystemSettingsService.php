@@ -21,38 +21,96 @@ class AdminSystemSettingsService
     /**
      * Safe read-only operational SMS configuration.
      *
-     * Credentials, provider endpoint and actual sender name are deliberately
-     * excluded from this payload.
+     * The TextBee API key, gateway device ID,
+     * and provider endpoint are deliberately excluded
+     * from this response.
+     *
+     * Only safe configuration indicators are returned.
+     *
+     * These indicators do not establish that the
+     * Android phone is currently online or that
+     * an SMS has been delivered.
      *
      * @return array<string, mixed>
      */
     public function smsConfiguration(): array
     {
         return [
+            /*
+            |--------------------------------------------------------------------------
+            | Normal SMS Master Switch
+            |--------------------------------------------------------------------------
+            */
+
             'enabled' =>
                 (bool) config(
                     'sms.enabled',
                     false
                 ),
 
+            /*
+            |--------------------------------------------------------------------------
+            | Current SMS Provider
+            |--------------------------------------------------------------------------
+            */
+
             'provider' =>
                 (string) config(
                     'sms.provider',
-                    'semaphore'
+                    'textbee'
                 ),
 
-            'sender_name_configured' =>
+            /*
+            |--------------------------------------------------------------------------
+            | TextBee API Key
+            |--------------------------------------------------------------------------
+            |
+            | Return only whether a key is configured.
+            | Never return the actual API key.
+            |
+            */
+
+            'api_key_configured' =>
                 filled(
                     config(
-                        'sms.semaphore.sender_name'
+                        'sms.textbee.api_key'
                     )
                 ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | TextBee Android Gateway Device
+            |--------------------------------------------------------------------------
+            |
+            | Return only whether a device ID is configured.
+            | Do not expose the actual device ID.
+            |
+            */
+
+            'device_id_configured' =>
+                filled(
+                    config(
+                        'sms.textbee.device_id'
+                    )
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Controlled Live Test
+            |--------------------------------------------------------------------------
+            */
 
             'live_test_enabled' =>
                 (bool) config(
                     'sms.live_test.enabled',
                     false
                 ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Appointment Reminder Configuration
+            |--------------------------------------------------------------------------
+            */
 
             'reminders' => [
                 'lead_minutes' =>
@@ -71,11 +129,14 @@ class AdminSystemSettingsService
     }
 
     /**
-     * Return all editable templates in stable catalog order.
+     * Return all editable SMS templates in
+     * stable catalog order.
      *
-     * Missing rows are represented by an unsaved model containing the safe
-     * application default. This keeps the Admin screen usable even if a row
-     * was accidentally removed.
+     * Missing rows are represented by an unsaved
+     * model containing the safe application default.
+     *
+     * This keeps the Administrator screen usable
+     * even if a template row was accidentally removed.
      *
      * @return EloquentCollection<int, SmsTemplate>
      */
@@ -125,6 +186,12 @@ class AdminSystemSettingsService
         return $templates;
     }
 
+    /**
+     * Update an editable SMS template.
+     *
+     * Preserve transaction safety, template
+     * restrictions, and administrator audit logging.
+     */
     public function updateTemplate(
         User $admin,
         string $typeValue,

@@ -1,3 +1,4 @@
+
 import {
     createRouter,
     createWebHistory,
@@ -7,38 +8,86 @@ import { pinia } from '../pinia';
 import { useAuthStore } from '../stores/auth';
 
 import AdminLayout from '../layouts/AdminLayout.vue';
-
-import DashboardView from '../views/DashboardView.vue';
 import LoginView from '../views/LoginView.vue';
 
-import ShopsView from '../views/ShopsView.vue';
-import ShopDetailView from '../views/ShopDetailView.vue';
+/*
+|--------------------------------------------------------------------------
+| Lazy-Loaded Admin Pages
+|--------------------------------------------------------------------------
+|
+| Login and the shared admin layout are loaded immediately.
+|
+| Other admin pages are loaded only when their routes are visited.
+| This reduces the amount of JavaScript downloaded initially.
+|
+| All existing route names, paths, guards, and metadata are preserved.
+|
+*/
 
-import UsersView from '../views/UsersView.vue';
-import UserDetailView from '../views/UserDetailView.vue';
+const DashboardView = () =>
+    import('../views/DashboardView.vue');
 
-import AppointmentsView from '../views/AppointmentsView.vue';
-import AppointmentDetailView from '../views/AppointmentDetailView.vue';
+const ShopsView = () =>
+    import('../views/ShopsView.vue');
 
+const ShopDetailView = () =>
+    import('../views/ShopDetailView.vue');
 
-import FeedbackView from '../views/FeedbackView.vue';
-import FeedbackDetailView from '../views/FeedbackDetailView.vue';
+const UsersView = () =>
+    import('../views/UsersView.vue');
 
-import ReportsView from '../views/ReportsView.vue';
+const UserDetailView = () =>
+    import('../views/UserDetailView.vue');
 
-import SmsMonitoringView from '../views/SmsMonitoringView.vue';
-import SmsNotificationDetailView from '../views/SmsNotificationDetailView.vue';
+const AppointmentsView = () =>
+    import('../views/AppointmentsView.vue');
 
-import SystemSettingsView from '../views/SystemSettingsView.vue';
-import AccountSettingsView from '../views/AccountSettingsView.vue';
+const AppointmentDetailView = () =>
+    import('../views/AppointmentDetailView.vue');
 
-import AuditLogsView from '../views/AuditLogsView.vue';
-import AuditLogDetailView from '../views/AuditLogDetailView.vue';
+const FeedbackView = () =>
+    import('../views/FeedbackView.vue');
+
+const FeedbackDetailView = () =>
+    import('../views/FeedbackDetailView.vue');
+
+const ReportsView = () =>
+    import('../views/ReportsView.vue');
+
+const SmsMonitoringView = () =>
+    import('../views/SmsMonitoringView.vue');
+
+const SmsNotificationDetailView = () =>
+    import('../views/SmsNotificationDetailView.vue');
+
+const SystemSettingsView = () =>
+    import('../views/SystemSettingsView.vue');
+
+const AccountSettingsView = () =>
+    import('../views/AccountSettingsView.vue');
+
+const AuditLogsView = () =>
+    import('../views/AuditLogsView.vue');
+
+const AuditLogDetailView = () =>
+    import('../views/AuditLogDetailView.vue');
+
+/*
+|--------------------------------------------------------------------------
+| Admin Router
+|--------------------------------------------------------------------------
+*/
 
 const router = createRouter({
     history: createWebHistory(),
 
     routes: [
+        /*
+        |--------------------------------------------------------------------------
+        | Administrator Login
+        |--------------------------------------------------------------------------
+        */
+
         {
             path: '/admin/login',
             name: 'admin.login',
@@ -50,6 +99,12 @@ const router = createRouter({
             },
         },
 
+        /*
+        |--------------------------------------------------------------------------
+        | Protected Administrator Routes
+        |--------------------------------------------------------------------------
+        */
+
         {
             path: '/admin',
             component: AdminLayout,
@@ -59,6 +114,12 @@ const router = createRouter({
             },
 
             children: [
+                /*
+                |--------------------------------------------------------------------------
+                | Default Redirect
+                |--------------------------------------------------------------------------
+                */
+
                 {
                     path: '',
 
@@ -67,6 +128,12 @@ const router = createRouter({
                             'admin.dashboard',
                     },
                 },
+
+                /*
+                |--------------------------------------------------------------------------
+                | Dashboard
+                |--------------------------------------------------------------------------
+                */
 
                 {
                     path: 'dashboard',
@@ -78,6 +145,12 @@ const router = createRouter({
                         title: 'Dashboard',
                     },
                 },
+
+                /*
+                |--------------------------------------------------------------------------
+                | Shops
+                |--------------------------------------------------------------------------
+                */
 
                 {
                     path: 'shops',
@@ -101,6 +174,12 @@ const router = createRouter({
                     },
                 },
 
+                /*
+                |--------------------------------------------------------------------------
+                | Users
+                |--------------------------------------------------------------------------
+                */
+
                 {
                     path: 'users',
                     name: 'admin.users',
@@ -122,6 +201,12 @@ const router = createRouter({
                         title: 'User Details',
                     },
                 },
+
+                /*
+                |--------------------------------------------------------------------------
+                | Appointments
+                |--------------------------------------------------------------------------
+                */
 
                 {
                     path: 'appointments',
@@ -152,6 +237,11 @@ const router = createRouter({
                     },
                 },
 
+                /*
+                |--------------------------------------------------------------------------
+                | Feedback
+                |--------------------------------------------------------------------------
+                */
 
                 {
                     path: 'feedback',
@@ -182,6 +272,12 @@ const router = createRouter({
                     },
                 },
 
+                /*
+                |--------------------------------------------------------------------------
+                | Reports
+                |--------------------------------------------------------------------------
+                */
+
                 {
                     path: 'reports',
                     name: 'admin.reports',
@@ -192,6 +288,12 @@ const router = createRouter({
                         title: 'Reports',
                     },
                 },
+
+                /*
+                |--------------------------------------------------------------------------
+                | SMS Monitoring
+                |--------------------------------------------------------------------------
+                */
 
                 {
                     path:
@@ -229,6 +331,12 @@ const router = createRouter({
                     },
                 },
 
+                /*
+                |--------------------------------------------------------------------------
+                | System Settings
+                |--------------------------------------------------------------------------
+                */
+
                 {
                     path:
                         'system-settings',
@@ -247,6 +355,12 @@ const router = createRouter({
                     },
                 },
 
+                /*
+                |--------------------------------------------------------------------------
+                | Account Settings
+                |--------------------------------------------------------------------------
+                */
+
                 {
                     path:
                         'account-settings',
@@ -264,6 +378,12 @@ const router = createRouter({
                             'Account Settings',
                     },
                 },
+
+                /*
+                |--------------------------------------------------------------------------
+                | Audit Logs
+                |--------------------------------------------------------------------------
+                */
 
                 {
                     path:
@@ -303,6 +423,12 @@ const router = createRouter({
             ],
         },
 
+        /*
+        |--------------------------------------------------------------------------
+        | Unknown Administrator Routes
+        |--------------------------------------------------------------------------
+        */
+
         {
             path:
                 '/admin/:pathMatch(.*)*',
@@ -333,6 +459,16 @@ const router = createRouter({
         },
     ],
 });
+
+/*
+|--------------------------------------------------------------------------
+| Administrator Authentication Guards
+|--------------------------------------------------------------------------
+|
+| Prevent unauthenticated access to protected admin pages.
+| Redirect already authenticated administrators away from login.
+|
+*/
 
 router.beforeEach(
     (to) => {

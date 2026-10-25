@@ -8,8 +8,9 @@ use App\Enums\SmsNotificationStatus;
 use App\Enums\SmsNotificationType;
 use App\Exceptions\Sms\SmsGatewayException;
 use App\Models\SmsNotification;
-use App\Services\Sms\SemaphoreSmsGateway;
+use App\Services\Sms\TextBeeSmsGateway;
 use App\Support\AppointmentReminderKey;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -38,7 +39,7 @@ class SendSmsNotification implements ShouldQueue
     }
 
     public function handle(
-        SemaphoreSmsGateway $gateway
+        TextBeeSmsGateway $gateway
     ): void {
         /*
         |--------------------------------------------------------------------------
@@ -110,12 +111,9 @@ class SendSmsNotification implements ShouldQueue
         | Example:
         |
         | reminder queued for 1 PM
-        |        ↓
         | appointment rescheduled to 3 PM
-        |        ↓
-        | queue worker finally handles old reminder
-        |        ↓
-        | SKIP old 1 PM reminder
+        | queue worker later handles old reminder
+        | old reminder is SKIPPED.
         |
         */
 
@@ -187,10 +185,10 @@ class SendSmsNotification implements ShouldQueue
             return;
         } catch (Throwable $exception) {
             /*
-             * Unknown errors are always classified conservatively.
-             *
-             * We do not know whether provider communication occurred.
+             * Unknown errors are classified conservatively.
+             * Provider delivery status may be uncertain.
              */
+
             $this->markFailed(
                 notification:
                     $notification,
@@ -249,10 +247,15 @@ class SendSmsNotification implements ShouldQueue
             ]);
     }
 
-    /**
-     * Reject stale status/reminder messages before contacting
-     * the external SMS provider.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Stale Notification Validation
+    |--------------------------------------------------------------------------
+    |
+    | Check the appointment before contacting TextBee.
+    |
+    */
+
     private function staleReason(
         SmsNotification $notification
     ): ?string {
@@ -305,17 +308,26 @@ class SendSmsNotification implements ShouldQueue
                     $appointment
                 ),
 
-            /*
-             * Reschedule result notifications cannot currently be validated
-             * purely from appointment status because their source is the
-             * reschedule-request record itself.
-             */
             SmsNotificationType::RescheduleApproved,
-            SmsNotificationType::RescheduleRejected,
-            SmsNotificationType::AppointmentReminder =>
+            SmsNotificationType::RescheduleRejected =>
+                null,
+
+            SmsNotificationType::SystemTest =>
                 null,
         };
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Appointment Reminder Validation
+    |--------------------------------------------------------------------------
+    |
+    | Check:
+    | 1. Appointment is still confirmed.
+    | 2. Appointment schedule has not changed.
+    | 3. Reminder is still inside the allowed time window.
+    |
+    */
 
     private function reminderStaleReason(
         SmsNotification $notification,
@@ -344,8 +356,67 @@ class SendSmsNotification implements ShouldQueue
             return 'Appointment schedule changed before the reminder was sent.';
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | NEW: Prevent Late Reminders
+        |--------------------------------------------------------------------------
+        |
+        | If the worker was offline, previously queued reminders
+        | must be checked against the current appointment time.
+        |
+        | Example:
+        |
+        | Appointment: 1:00 PM
+        | Minimum lead: 60 minutes
+        |
+        | 11:30 AM -> Allowed
+        | 12:05 PM -> Skipped
+        |  1:05 PM -> Skipped
+        |
+        */
+
+        try {
+            $timezone = (string) config(
+                'app.timezone',
+                'Asia/Manila'
+            );
+
+            $minimumLeadMinutes = max(
+                0,
+                (int) config(
+                    'sms.reminders.minimum_lead_minutes',
+                    60
+                )
+            );
+
+            $startsAt = CarbonImmutable::parse(
+                $appointment->appointment_date->toDateString()
+                .' '
+                .$appointment->starts_at,
+                $timezone
+            );
+
+            $sendBy = $startsAt->subMinutes(
+                $minimumLeadMinutes
+            );
+
+            if (
+                CarbonImmutable::now($timezone)->greaterThan($sendBy)
+            ) {
+                return 'Appointment reminder is too late to send.';
+            }
+        } catch (Throwable) {
+            return 'Appointment schedule is unavailable.';
+        }
+
         return null;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mark Notification as Skipped
+    |--------------------------------------------------------------------------
+    */
 
     private function markSkipped(
         SmsNotification $notification,
@@ -377,6 +448,12 @@ class SendSmsNotification implements ShouldQueue
                     now(),
             ]);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mark Notification as Failed
+    |--------------------------------------------------------------------------
+    */
 
     private function markFailed(
         SmsNotification $notification,

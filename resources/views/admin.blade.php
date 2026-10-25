@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,6 +15,20 @@
     >
 
     <title>StyleHub Administrator</title>
+
+    <!-- Official StyleHub Mobile App Icon -->
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="any"
+        href="{{ asset('stylehub-icon.png') }}?v=2"
+    >
+
+    <link
+        rel="shortcut icon"
+        type="image/png"
+        href="{{ asset('stylehub-icon.png') }}?v=2"
+    >
 
     @vite([
         'resources/css/app.css',

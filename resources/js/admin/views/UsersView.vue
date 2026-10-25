@@ -704,11 +704,7 @@ onMounted(
 
         <section class="users-intro">
             <div class="users-intro-copy">
-                <div class="users-intro-label">
-                    <span class="users-intro-dot" />
-
-                    Account directory
-                </div>
+                
 
                 <h2>
                     Manage user accounts

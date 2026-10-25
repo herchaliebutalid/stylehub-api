@@ -40,7 +40,7 @@ class SmsNotificationFactory extends Factory
                 SmsNotificationStatus::Pending,
 
             'provider' =>
-                'semaphore',
+                'textbee',
 
             'provider_message_id' =>
                 null,
@@ -71,6 +71,13 @@ class SmsNotificationFactory extends Factory
         ];
     }
 
+    /**
+     * Factory state representing an SMS request
+     * accepted by the provider.
+     *
+     * Acceptance does not guarantee that the
+     * message reached the recipient's phone.
+     */
     public function accepted(): static
     {
         return $this->state(
@@ -106,7 +113,8 @@ class SmsNotificationFactory extends Factory
     }
 
     /**
-     * Failure for which a deliberate retry is considered safe.
+     * Failure for which a deliberate retry
+     * is considered safe.
      */
     public function failed(): static
     {
@@ -134,7 +142,11 @@ class SmsNotificationFactory extends Factory
     }
 
     /**
-     * Failure whose actual provider outcome is unknown.
+     * Failure whose actual provider
+     * outcome is unknown.
+     *
+     * An uncertain failure must not
+     * trigger an automatic resend.
      */
     public function uncertainFailure(): static
     {

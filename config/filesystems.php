@@ -1,3 +1,4 @@
+
 <?php
 
 return [
@@ -20,11 +21,10 @@ return [
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
-    | Below you may configure as many filesystem disks as necessary, and you
-    | may even configure multiple disks for the same driver. Examples for
-    | most supported storage drivers are configured here for reference.
+    | Below you may configure the disks used for file storage.
     |
-    | Supported drivers: "local", "ftp", "sftp", "s3"
+    | The public disk uses a relative URL so that images can be accessed
+    | through whichever hostname or IP address is used to reach Laravel.
     |
     */
 
@@ -38,10 +38,25 @@ return [
             'report' => false,
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | Public Storage
+        |--------------------------------------------------------------------------
+        |
+        | Shop gallery, service images, and public profile photos can be
+        | accessed through /storage.
+        |
+        | The relative URL prevents Laravel from returning image links
+        | tied to localhost or an outdated development address.
+        |
+        | Existing uploaded files are not changed or deleted.
+        |
+        */
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
@@ -67,9 +82,8 @@ return [
     | Symbolic Links
     |--------------------------------------------------------------------------
     |
-    | Here you may configure the symbolic links that will be created when the
-    | `storage:link` Artisan command is executed. The array keys should be
-    | the locations of the links and the values should be their targets.
+    | These links make public uploaded images accessible through
+    | the Laravel application's public directory.
     |
     */
 

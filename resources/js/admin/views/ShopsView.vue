@@ -779,11 +779,7 @@ onMounted(() => {
 
         <section class="shops-intro">
             <div class="shops-intro-copy">
-                <div class="shops-intro-label">
-                    <span class="shops-intro-dot" />
-
-                    Shop directory
-                </div>
+                
 
                 <h2>
                     Manage registered shops

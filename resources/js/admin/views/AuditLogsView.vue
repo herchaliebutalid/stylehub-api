@@ -635,11 +635,7 @@ onMounted(() => {
 
         <section class="audit-intro">
             <div class="audit-intro-copy">
-                <div class="audit-intro-label">
-                    <span class="audit-intro-dot" />
-
-                    Security & accountability
-                </div>
+                
 
                 <h2>
                     Audit logs

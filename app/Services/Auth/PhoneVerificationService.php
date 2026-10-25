@@ -5,7 +5,7 @@ namespace App\Services\Auth;
 use App\Exceptions\Sms\SmsGatewayException;
 use App\Models\PhoneVerificationCode;
 use App\Models\User;
-use App\Services\Sms\SemaphoreSmsGateway;
+use App\Services\Sms\TextBeeSmsGateway;
 use App\Support\Sms\PhilippineSmsRecipient;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 class PhoneVerificationService
 {
     public function __construct(
-        private readonly SemaphoreSmsGateway $smsGateway
+        private readonly TextBeeSmsGateway $smsGateway
     ) {}
 
     /**
@@ -73,7 +73,7 @@ class PhoneVerificationService
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Normalize Destination For Semaphore
+                    | Normalize SMS Destination
                     |--------------------------------------------------------------------------
                     */
 
@@ -208,7 +208,7 @@ class PhoneVerificationService
 
         /*
         |--------------------------------------------------------------------------
-        | Send Through Existing Semaphore Gateway
+        | Send Through TextBee Gateway
         |--------------------------------------------------------------------------
         |
         | This intentionally does NOT use sms_notifications because that table
@@ -262,7 +262,7 @@ class PhoneVerificationService
             | Uncertain Failure
             |--------------------------------------------------------------------------
             |
-            | A timeout may happen after Semaphore already accepted the SMS.
+            | A timeout may happen after TextBee already accepted the SMS.
             | We deliberately do NOT blindly issue another code here.
             |
             */
