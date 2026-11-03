@@ -1,4 +1,3 @@
-
 <?php
 
 use App\Http\Middleware\AddSecurityHeaders;
@@ -117,6 +116,29 @@ return Application::configure(
         function (
             Middleware $middleware
         ): void {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Railway Production HTTPS / Trusted Proxies
+            |--------------------------------------------------------------------------
+            |
+            | Railway terminates HTTPS before forwarding requests
+            | to the Laravel application.
+            |
+            | Trust forwarded proxy headers in production so Laravel
+            | correctly detects HTTPS and generates secure URLs.
+            |
+            | Local development remains unchanged.
+            |
+            */
+
+            if (
+                app()->environment('production')
+            ) {
+                $middleware->trustProxies(
+                    at: '*'
+                );
+            }
 
             /*
             |--------------------------------------------------------------------------
