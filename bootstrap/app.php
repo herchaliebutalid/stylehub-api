@@ -133,12 +133,12 @@ return Application::configure(
             */
 
             if (
-                app()->environment('production')
-            ) {
-                $middleware->trustProxies(
-                    at: '*'
-                );
-            }
+    getenv('RAILWAY_ENVIRONMENT_NAME') !== false
+) {
+    $middleware->trustProxies(
+        at: '*'
+    );
+}
 
             /*
             |--------------------------------------------------------------------------
