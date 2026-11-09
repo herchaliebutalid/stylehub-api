@@ -169,11 +169,6 @@ async function submitLogin() {
                                 Barber Shop &amp; Beauty Parlor Management
                             </strong>
                         </div>
-
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M12 3l8 4v5c0 5-3.4 8.2-8 9.5C7.4 20.2 4 17 4 12V7l8-4z" />
-                            <path d="M9 12l2 2 4-4" />
-                        </svg>
                     </div>
                 </div>
 
@@ -419,8 +414,6 @@ async function submitLogin() {
 
             <footer class="login-footer">
                 <span>StyleHub Administrator Portal</span>
-                <span class="login-footer-dot"></span>
-                <span>Secure platform access</span>
             </footer>
         </section>
     </main>
@@ -790,16 +783,6 @@ async function submitLogin() {
     color: rgba(255, 255, 255, 0.4);
     font-size: 7.5px;
     font-weight: 550;
-}
-
-.brand-footer-content > svg {
-    width: 18px;
-    height: 18px;
-    fill: none;
-    stroke: rgba(255, 255, 255, 0.22);
-    stroke-width: 1.7;
-    stroke-linecap: round;
-    stroke-linejoin: round;
 }
 
 /* ==========================================================
@@ -1283,13 +1266,6 @@ async function submitLogin() {
     padding-top: 30px;
     color: #9ba2ac;
     font-size: 7.5px;
-}
-
-.login-footer-dot {
-    width: 3px;
-    height: 3px;
-    border-radius: 999px;
-    background: #c4c8ce;
 }
 
 /* ==========================================================

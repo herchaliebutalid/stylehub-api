@@ -1,6 +1,5 @@
-
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { apiRequest } from '../services/api';
 import { useAuthStore } from '../stores/auth';
@@ -9,8 +8,9 @@ const router = useRouter();
 const auth = useAuthStore();
 
 const dashboard = ref(null);
-const isLoading = ref(true);
+const isLoading = ref(false);
 const errorMessage = ref('');
+const lastUpdated = ref('');
 
 const numberFormatter = new Intl.NumberFormat('en-PH');
 
@@ -26,26 +26,35 @@ function percentage(value, total) {
     const current = Number(value ?? 0);
     const maximum = Number(total ?? 0);
 
-    if (maximum <= 0 || current <= 0) {
+    if (
+        !Number.isFinite(current) ||
+        !Number.isFinite(maximum) ||
+        maximum <= 0
+    ) {
         return 0;
     }
 
-    return Math.min(
-        100,
-        Math.round((current / maximum) * 100),
+    return Math.max(
+        0,
+        Math.min(
+            100,
+            Math.round((current / maximum) * 100)
+        )
     );
 }
 
-/* ==========================================================
-   DASHBOARD SUMMARIES
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| DASHBOARD DATA
+|--------------------------------------------------------------------------
+*/
 
 const customerSummary = computed(() =>
     dashboard.value?.users?.customers ?? {
         total: 0,
         active: 0,
         suspended: 0,
-    },
+    }
 );
 
 const shopOwnerSummary = computed(() =>
@@ -53,7 +62,7 @@ const shopOwnerSummary = computed(() =>
         total: 0,
         active: 0,
         suspended: 0,
-    },
+    }
 );
 
 const shopSummary = computed(() =>
@@ -62,7 +71,7 @@ const shopSummary = computed(() =>
         pending: 0,
         approved: 0,
         rejected: 0,
-    },
+    }
 );
 
 const appointmentSummary = computed(() =>
@@ -74,7 +83,7 @@ const appointmentSummary = computed(() =>
         no_show: 0,
         cancelled: 0,
         declined: 0,
-    },
+    }
 );
 
 const otherSummary = computed(() =>
@@ -82,87 +91,81 @@ const otherSummary = computed(() =>
         feedback: 0,
         active_promos: 0,
         audit_logs: 0,
-    },
+    }
 );
 
-const totalAccounts = computed(
-    () =>
-        Number(customerSummary.value.total ?? 0) +
-        Number(shopOwnerSummary.value.total ?? 0),
+/*
+|--------------------------------------------------------------------------
+| COMPUTED STATISTICS
+|--------------------------------------------------------------------------
+*/
+
+const totalAccounts = computed(() =>
+    Number(customerSummary.value.total ?? 0) +
+    Number(shopOwnerSummary.value.total ?? 0)
 );
 
-const activeAccounts = computed(
-    () =>
-        Number(customerSummary.value.active ?? 0) +
-        Number(shopOwnerSummary.value.active ?? 0),
+const activeAccounts = computed(() =>
+    Number(customerSummary.value.active ?? 0) +
+    Number(shopOwnerSummary.value.active ?? 0)
 );
 
-const suspendedAccounts = computed(
-    () =>
-        Number(customerSummary.value.suspended ?? 0) +
-        Number(shopOwnerSummary.value.suspended ?? 0),
+const suspendedAccounts = computed(() =>
+    Number(customerSummary.value.suspended ?? 0) +
+    Number(shopOwnerSummary.value.suspended ?? 0)
 );
 
 const accountActivePercentage = computed(() =>
     percentage(
         activeAccounts.value,
-        totalAccounts.value,
-    ),
+        totalAccounts.value
+    )
 );
 
-/* ==========================================================
-   OVERVIEW STATISTICS
-   ========================================================== */
+const appointmentCompletionPercentage = computed(() =>
+    percentage(
+        appointmentSummary.value.completed,
+        appointmentSummary.value.total
+    )
+);
 
-const overviewCards = computed(() => {
-    if (!dashboard.value) {
-        return [];
-    }
-
-    return [
-        {
-            title: 'Customers',
-            value: customerSummary.value.total,
-            description:
-                `${formatNumber(customerSummary.value.active)} active accounts`,
-            type: 'customers',
-        },
-        {
-            title: 'Shop Owners',
-            value: shopOwnerSummary.value.total,
-            description:
-                `${formatNumber(shopOwnerSummary.value.active)} active accounts`,
-            type: 'owners',
-        },
-        {
-            title: 'Registered Shops',
-            value: shopSummary.value.total,
-            description:
-                `${formatNumber(shopSummary.value.pending)} awaiting review`,
-            type: 'shops',
-        },
-        {
-            title: 'Appointments',
-            value: appointmentSummary.value.total,
-            description:
-                `${formatNumber(appointmentSummary.value.pending)} currently pending`,
-            type: 'appointments',
-        },
-    ];
-});
+const overviewCards = computed(() => [
+    {
+        type: 'customers',
+        title: 'Customers',
+        value: customerSummary.value.total,
+        detail: `${formatNumber(customerSummary.value.active)} active accounts`,
+    },
+    {
+        type: 'owners',
+        title: 'Shop owners',
+        value: shopOwnerSummary.value.total,
+        detail: `${formatNumber(shopOwnerSummary.value.active)} active accounts`,
+    },
+    {
+        type: 'shops',
+        title: 'Registered shops',
+        value: shopSummary.value.total,
+        detail: `${formatNumber(shopSummary.value.pending)} awaiting review`,
+    },
+    {
+        type: 'appointments',
+        title: 'Appointments',
+        value: appointmentSummary.value.total,
+        detail: `${formatNumber(appointmentSummary.value.pending)} pending bookings`,
+    },
+]);
 
 const accountGroups = computed(() => [
     {
         key: 'customers',
         title: 'Customers',
-        subtitle: 'Customer accounts',
-        info: customerSummary.value,
+        data: customerSummary.value,
     },
     {
         key: 'owners',
-        title: 'Shop Owners',
-        subtitle: 'Business accounts',
-        info: shopOwnerSummary.value,
+        title: 'Shop owners',
+        data: shopOwnerSummary.value,
     },
 ]);
 
@@ -170,26 +173,22 @@ const shopStatuses = computed(() => [
     {
         key: 'approved',
         title: 'Approved',
-        subtitle: 'Visible to customers',
+        subtitle: 'Published shops',
         count: shopSummary.value.approved,
     },
     {
         key: 'pending',
-        title: 'Pending Review',
-        subtitle: 'Needs administrator action',
+        title: 'Pending review',
+        subtitle: 'Awaiting decision',
         count: shopSummary.value.pending,
     },
     {
         key: 'rejected',
         title: 'Rejected',
-        subtitle: 'Registration not approved',
+        subtitle: 'Not approved',
         count: shopSummary.value.rejected,
     },
 ]);
-
-/* ==========================================================
-   ALL SIX APPOINTMENT STATUSES
-   ========================================================== */
 
 const bookingStatuses = computed(() => [
     {
@@ -227,27 +226,29 @@ const bookingStatuses = computed(() => [
 const platformActivity = computed(() => [
     {
         key: 'feedback',
-        title: 'Customer Feedback',
-        subtitle: 'Reviews submitted by customers',
+        title: 'Customer feedback',
+        subtitle: 'Submitted reviews',
         count: otherSummary.value.feedback,
     },
     {
         key: 'promo',
-        title: 'Active Promos',
-        subtitle: 'Promotions currently active',
+        title: 'Active promotions',
+        subtitle: 'Currently available offers',
         count: otherSummary.value.active_promos,
     },
     {
         key: 'audit',
-        title: 'Audit Logs',
-        subtitle: 'Recorded administrator activity',
+        title: 'Audit logs',
+        subtitle: 'Administrative records',
         count: otherSummary.value.audit_logs,
     },
 ]);
 
-/* ==========================================================
-   LOAD DASHBOARD FROM LARAVEL
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| FETCH DASHBOARD DATA
+|--------------------------------------------------------------------------
+*/
 
 async function loadDashboard() {
     if (!auth.token) {
@@ -268,7 +269,7 @@ async function loadDashboard() {
             '/admin/dashboard',
             {
                 token: auth.token,
-            },
+            }
         );
 
         if (
@@ -276,11 +277,20 @@ async function loadDashboard() {
             typeof response.data !== 'object'
         ) {
             throw new Error(
-                'The dashboard response was invalid.',
+                'The dashboard response was invalid.'
             );
         }
 
         dashboard.value = response.data;
+
+        lastUpdated.value = new Intl.DateTimeFormat(
+            'en-PH',
+            {
+                hour: 'numeric',
+                minute: '2-digit',
+            }
+        ).format(new Date());
+
     } catch (error) {
         if (
             error?.status === 401 ||
@@ -299,114 +309,92 @@ async function loadDashboard() {
             error?.data?.message ??
             error?.message ??
             'Unable to load the dashboard.';
+
     } finally {
         isLoading.value = false;
     }
 }
 
-onMounted(() => {
-    void loadDashboard();
-});
+/*
+|--------------------------------------------------------------------------
+| WAIT FOR INITIAL DASHBOARD DATA
+|--------------------------------------------------------------------------
+|
+| The updated AdminLayout.vue provides a Suspense boundary.
+| The dashboard will be rendered only after this initial
+| request finishes.
+|
+| Subsequent manual refreshes preserve the displayed data.
+|
+*/
+
+await loadDashboard();
 </script>
 
 <template>
-    <div class="dashboard">
+    <div class="dashboard sh-dashboard">
 
-        <!-- LIGHT WELCOME CARD -->
+        <!-- DASHBOARD HEADER -->
 
-        <section class="welcome-section dashboard-hero">
-            <div class="dashboard-hero-content">
-                <h2>Welcome to StyleHub Admin</h2>
-
-                <p class="welcome-description">
-                    Monitor users, shops, appointments, reviews,
-                    promotions, and administrative activity
-                    from one central workspace.
+        <header class="sh-dash-header">
+            <div class="sh-dash-heading">
+                <p class="sh-dash-eyebrow">
+                    STYLEHUB ADMINISTRATION
                 </p>
 
-                <div
-                    v-if="dashboard"
-                    class="hero-summary"
-                >
-                    <div class="hero-summary-item">
-                        <span>Accounts</span>
-                        <strong>
-                            {{ formatNumber(totalAccounts) }}
-                        </strong>
-                    </div>
+                <h1>Dashboard</h1>
 
-                    <div class="hero-summary-divider"></div>
-
-                    <div class="hero-summary-item">
-                        <span>Shops</span>
-                        <strong>
-                            {{ formatNumber(shopSummary.total) }}
-                        </strong>
-                    </div>
-
-                    <div class="hero-summary-divider"></div>
-
-                    <div class="hero-summary-item">
-                        <span>Appointments</span>
-                        <strong>
-                            {{ formatNumber(appointmentSummary.total) }}
-                        </strong>
-                    </div>
-                </div>
+                <p class="sh-dash-subtitle">
+                    A clear overview of users, shops,
+                    appointments, and platform activity.
+                </p>
             </div>
 
-            <div class="dashboard-hero-actions">
+            <div class="sh-dash-toolbar">
+                <span
+                    v-if="lastUpdated"
+                    class="sh-dash-updated"
+                >
+                    Updated {{ lastUpdated }}
+                </span>
+
                 <button
                     type="button"
-                    class="refresh-button hero-refresh"
+                    class="sh-dash-refresh"
                     :disabled="isLoading"
                     @click="loadDashboard"
                 >
                     <svg
                         viewBox="0 0 24 24"
                         aria-hidden="true"
-                        :class="{ spinning: isLoading }"
                     >
-                        <path d="M20 11a8 8 0 10-2.3 5.7" />
-                        <path d="M20 5v6h-6" />
+                        <path
+                            d="M20 11a8 8 0 1 1-2.3-5.7M20 4v6h-6"
+                        />
                     </svg>
 
-                    <span>
-                        {{
-                            isLoading
-                                ? 'Refreshing...'
-                                : 'Refresh data'
-                        }}
-                    </span>
+                    Refresh
                 </button>
             </div>
-        </section>
+        </header>
 
         <!-- ERROR MESSAGE -->
 
         <div
             v-if="errorMessage"
-            class="error-panel dashboard-error"
+            class="sh-dash-error"
             role="alert"
         >
-            <div class="error-panel-icon">
-                <svg
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                >
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M12 8v5M12 17h.01" />
-                </svg>
-            </div>
+            <div>
+                <strong>
+                    Unable to update dashboard
+                </strong>
 
-            <div class="error-panel-copy">
-                <strong>Dashboard unavailable</strong>
                 <p>{{ errorMessage }}</p>
             </div>
 
             <button
                 type="button"
-                class="retry-button"
                 :disabled="isLoading"
                 @click="loadDashboard"
             >
@@ -414,318 +402,265 @@ onMounted(() => {
             </button>
         </div>
 
-        <!-- LOADING SKELETON -->
-
-        <template v-if="isLoading && !dashboard">
-            <section class="overview-grid">
-                <div
-                    v-for="index in 4"
-                    :key="index"
-                    class="overview-card dashboard-skeleton-card"
-                >
-                    <div class="skeleton skeleton-icon"></div>
-
-                    <div class="dashboard-skeleton-copy">
-                        <div class="skeleton skeleton-label"></div>
-                        <div class="skeleton skeleton-number"></div>
-                        <div class="skeleton skeleton-description"></div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="detail-grid dashboard-detail-grid">
-                <div class="panel skeleton-panel"></div>
-                <div class="panel skeleton-panel"></div>
-            </section>
-
-            <section class="bottom-grid">
-                <div class="panel skeleton-panel"></div>
-                <div class="panel skeleton-panel"></div>
-            </section>
-        </template>
-
         <!-- DASHBOARD CONTENT -->
 
-        <template v-else-if="dashboard">
+        <template v-if="dashboard">
 
-            <!-- STATISTIC CARDS -->
+            <!-- OVERVIEW -->
 
-            <section class="overview-grid">
-                <article
-                    v-for="card in overviewCards"
-                    :key="card.type"
-                    class="overview-card dashboard-stat-card"
-                >
-                    <div
-                        class="overview-icon"
-                        :class="card.type"
+            <section
+                class="sh-dash-section"
+                aria-labelledby="overview-title"
+            >
+                <div class="sh-dash-section-heading">
+                    <h2 id="overview-title">
+                        Overview
+                    </h2>
+
+                    <span>Platform totals</span>
+                </div>
+
+                <div class="sh-dash-metrics">
+                    <article
+                        v-for="card in overviewCards"
+                        :key="card.type"
+                        class="sh-dash-metric"
                     >
-                        <svg
-                            v-if="card.type === 'customers'"
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <circle cx="9" cy="8" r="3" />
-                            <path d="M3 20c0-4 2-7 6-7s6 3 6 7" />
-                            <circle cx="17" cy="9" r="2.5" />
-                            <path d="M15 14c4 0 6 2 6 6" />
-                        </svg>
+                        <div class="sh-dash-metric-top">
+                            <span class="sh-dash-metric-label">
+                                {{ card.title }}
+                            </span>
 
-                        <svg
-                            v-else-if="card.type === 'owners'"
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <circle cx="12" cy="8" r="3.5" />
-                            <path d="M5 21c0-5 2.5-8 7-8s7 3 7 8" />
-                            <path d="M18 4v4M16 6h4" />
-                        </svg>
+                            <span
+                                class="sh-dash-icon"
+                                :class="`sh-dash-icon--${card.type}`"
+                            >
+                                <svg
+                                    v-if="card.type === 'customers'"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 20v-2a4 4 0 0 1-3-3.87M16 2.13a4 4 0 0 1 0 7.75"
+                                    />
+                                </svg>
 
-                        <svg
-                            v-else-if="card.type === 'shops'"
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <path d="M4 10v10h16V10" />
-                            <path d="M3 10l2-6h14l2 6" />
-                            <path d="M8 20v-6h8v6" />
-                            <path
-                                d="M3 10c0 2 3 2 3 0 0 2 3 2 3 0 0 2 3 2 3 0 0 2 3 2 3 0"
-                            />
-                        </svg>
+                                <svg
+                                    v-else-if="card.type === 'owners'"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <circle
+                                        cx="12"
+                                        cy="8"
+                                        r="4"
+                                    />
 
-                        <svg
-                            v-else
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <rect
-                                x="3"
-                                y="5"
-                                width="18"
-                                height="16"
-                                rx="2"
-                            />
-                            <path d="M8 3v4M16 3v4M3 10h18" />
-                            <path d="M8 14h3M14 14h2M8 17h2" />
-                        </svg>
-                    </div>
+                                    <path
+                                        d="M4 21v-2a8 8 0 0 1 16 0v2M18 4h4M20 2v4"
+                                    />
+                                </svg>
 
-                    <div class="overview-copy">
-                        <span class="stat-label">
-                            {{ card.title }}
-                        </span>
+                                <svg
+                                    v-else-if="card.type === 'shops'"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        d="M3 10h18l-2-6H5l-2 6zM5 10v10h14V10M9 20v-7h6v7M3 10c0 2 3 2 3 0 0 2 3 2 3 0 0 2 3 2 3 0 0 2 3 2 3 0 0 2 3 2 3 0"
+                                    />
+                                </svg>
 
-                        <strong>
+                                <svg
+                                    v-else
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <rect
+                                        x="3"
+                                        y="5"
+                                        width="18"
+                                        height="16"
+                                        rx="2"
+                                    />
+
+                                    <path
+                                        d="M7 3v4M17 3v4M3 10h18M8 15h3M14 15h2"
+                                    />
+                                </svg>
+                            </span>
+                        </div>
+
+                        <strong class="sh-dash-metric-value">
                             {{ formatNumber(card.value) }}
                         </strong>
 
-                        <div class="stat-description">
-                            <span class="stat-description-dot"></span>
-                            {{ card.description }}
-                        </div>
-                    </div>
-
-                    <div class="stat-arrow">
-                        <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <path d="M9 18l6-6-6-6" />
-                        </svg>
-                    </div>
-                </article>
+                        <p class="sh-dash-metric-detail">
+                            {{ card.detail }}
+                        </p>
+                    </article>
+                </div>
             </section>
 
-            <!-- USER ACCOUNTS AND SHOP APPROVALS -->
+            <!-- MANAGEMENT OVERVIEW -->
 
-            <section class="detail-grid dashboard-detail-grid">
+            <section
+                class="sh-dash-section"
+                aria-labelledby="management-title"
+            >
+                <div class="sh-dash-section-heading">
+                    <h2 id="management-title">
+                        Management overview
+                    </h2>
 
-                <!-- USER ACCOUNTS -->
+                    <span>
+                        Accounts &amp; registrations
+                    </span>
+                </div>
 
-                <article class="panel dashboard-panel">
-                    <div class="panel-heading">
-                        <div>
-                            <p class="panel-eyebrow">ACCOUNTS</p>
+                <div class="sh-dash-panels">
 
-                            <h2>User accounts</h2>
+                    <!-- USER ACCOUNTS -->
 
-                            <p>
-                                Customer and shop owner account
-                                activity across StyleHub.
-                            </p>
-                        </div>
+                    <article class="sh-dash-panel">
+                        <div class="sh-dash-panel-head">
+                            <div>
+                                <h3>User accounts</h3>
 
-                        <span class="panel-badge">
-                            {{ formatNumber(totalAccounts) }} total
-                        </span>
-                    </div>
-
-                    <div class="account-overview">
-                        <div class="account-overview-main">
-                            <div class="account-overview-number">
-                                {{ formatNumber(activeAccounts) }}
+                                <p>
+                                    Customer and business account status
+                                </p>
                             </div>
 
-                            <div class="account-overview-copy">
-                                <strong>Active accounts</strong>
+                            <span class="sh-dash-badge">
+                                {{ formatNumber(totalAccounts) }} total
+                            </span>
+                        </div>
 
-                                <span>
-                                    {{ accountActivePercentage }}%
-                                    of all registered accounts
+                        <div class="sh-dash-main-total">
+                            <div>
+                                <span class="sh-dash-field-label">
+                                    Active accounts
                                 </span>
+
+                                <div class="sh-dash-main-number">
+                                    {{ formatNumber(activeAccounts) }}
+                                </div>
                             </div>
+
+                            <span class="sh-dash-percent">
+                                {{ accountActivePercentage }}% active
+                            </span>
                         </div>
 
-                        <span class="account-health">
-                            Healthy
-                        </span>
-                    </div>
-
-                    <div class="overall-progress">
                         <div
-                            class="overall-progress-fill"
-                            :style="{
-                                width: `${accountActivePercentage}%`
-                            }"
-                        ></div>
-                    </div>
-
-                    <!-- CUSTOMER AND SHOP OWNER GROUPS -->
-
-                    <div class="account-groups dashboard-account-groups">
-                        <div
-                            v-for="group in accountGroups"
-                            :key="group.key"
-                            class="account-group dashboard-account-card"
+                            class="sh-dash-track"
+                            role="progressbar"
+                            aria-label="Active account percentage"
+                            :aria-valuenow="accountActivePercentage"
+                            aria-valuemin="0"
+                            aria-valuemax="100"
                         >
-                            <div class="account-title">
-                                <div class="account-title-left">
-                                    <span
-                                        class="account-icon"
-                                        :class="group.key"
-                                    >
-                                        <svg
-                                            v-if="group.key === 'customers'"
-                                            viewBox="0 0 24 24"
-                                            aria-hidden="true"
-                                        >
-                                            <circle cx="9" cy="8" r="3" />
-                                            <path
-                                                d="M3 20c0-4 2-7 6-7s6 3 6 7"
-                                            />
-                                        </svg>
+                            <span
+                                class="sh-dash-fill sh-dash-fill--active"
+                                :style="{
+                                    width: `${accountActivePercentage}%`
+                                }"
+                            ></span>
+                        </div>
 
-                                        <svg
-                                            v-else
-                                            viewBox="0 0 24 24"
-                                            aria-hidden="true"
-                                        >
-                                            <circle
-                                                cx="12"
-                                                cy="8"
-                                                r="3.5"
-                                            />
-                                            <path
-                                                d="M5 21c0-5 2.5-8 7-8s7 3 7 8"
-                                            />
-                                        </svg>
-                                    </span>
+                        <div class="sh-dash-account-list">
+                            <div
+                                v-for="group in accountGroups"
+                                :key="group.key"
+                                class="sh-dash-account-row"
+                            >
+                                <div class="sh-dash-account-title">
+                                    <strong>
+                                        {{ group.title }}
+                                    </strong>
 
-                                    <div>
-                                        <strong>{{ group.title }}</strong>
-                                        <span>{{ group.subtitle }}</span>
-                                    </div>
+                                    <strong>
+                                        {{ formatNumber(group.data.total) }}
+                                    </strong>
                                 </div>
 
-                                <b>
-                                    {{ formatNumber(group.info.total) }}
-                                </b>
-                            </div>
+                                <div class="sh-dash-account-meta">
+                                    <span>
+                                        <i
+                                            class="sh-dash-dot sh-dash-dot--active"
+                                        ></i>
 
-                            <div class="progress-track">
+                                        {{ formatNumber(group.data.active) }}
+                                        active
+                                    </span>
+
+                                    <span>
+                                        <i
+                                            class="sh-dash-dot sh-dash-dot--suspended"
+                                        ></i>
+
+                                        {{ formatNumber(group.data.suspended) }}
+                                        suspended
+                                    </span>
+                                </div>
+
                                 <div
-                                    class="progress-fill active"
-                                    :style="{
-                                        width: `${percentage(
-                                            group.info.active,
-                                            group.info.total
-                                        )}%`
-                                    }"
-                                ></div>
-                            </div>
-
-                            <div class="breakdown">
-                                <span>
-                                    <i class="dot active"></i>
-                                    <span>Active</span>
-                                    <strong>
-                                        {{ formatNumber(group.info.active) }}
-                                    </strong>
-                                </span>
-
-                                <span>
-                                    <i class="dot suspended"></i>
-                                    <span>Suspended</span>
-                                    <strong>
-                                        {{ formatNumber(group.info.suspended) }}
-                                    </strong>
-                                </span>
+                                    class="sh-dash-track sh-dash-track--small"
+                                    role="progressbar"
+                                    :aria-label="`${group.title} active percentage`"
+                                    :aria-valuenow="percentage(group.data.active, group.data.total)"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"
+                                >
+                                    <span
+                                        class="sh-dash-fill sh-dash-fill--active"
+                                        :style="{
+                                            width: `${percentage(
+                                                group.data.active,
+                                                group.data.total
+                                            )}%`
+                                        }"
+                                    ></span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="panel-footer-note">
-                        <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <circle cx="12" cy="12" r="9" />
-                            <path d="M12 11v5M12 8h.01" />
-                        </svg>
-
-                        <span>
+                        <p class="sh-dash-panel-foot">
                             {{ formatNumber(suspendedAccounts) }}
                             account{{ suspendedAccounts === 1 ? '' : 's' }}
-                            currently suspended.
-                        </span>
-                    </div>
-                </article>
+                            currently suspended
+                        </p>
+                    </article>
 
-                <!-- SHOP APPROVALS -->
+                    <!-- SHOP APPROVALS -->
 
-                <article class="panel dashboard-panel">
-                    <div class="panel-heading">
-                        <div>
-                            <p class="panel-eyebrow">
-                                SHOP MANAGEMENT
-                            </p>
+                    <article class="sh-dash-panel">
+                        <div class="sh-dash-panel-head">
+                            <div>
+                                <h3>Shop approvals</h3>
 
-                            <h2>Shop approvals</h2>
+                                <p>
+                                    Registration and approval breakdown
+                                </p>
+                            </div>
 
-                            <p>
-                                Current registration and approval
-                                status of StyleHub shops.
-                            </p>
+                            <span class="sh-dash-badge">
+                                {{ formatNumber(shopSummary.total) }}
+                                shops
+                            </span>
                         </div>
 
-                        <span class="panel-badge">
-                            {{ formatNumber(shopSummary.total) }}
-                            shops
-                        </span>
-                    </div>
-
-                    <div class="shop-status-summary">
-                        <div
-                            v-for="status in shopStatuses"
-                            :key="status.key"
-                            class="shop-status-block"
-                        >
-                            <div class="status-row">
-                                <div class="status-name">
+                        <div class="sh-dash-shop-list">
+                            <div
+                                v-for="status in shopStatuses"
+                                :key="status.key"
+                                class="sh-dash-shop-row"
+                            >
+                                <div class="sh-dash-shop-info">
                                     <span
-                                        class="status-marker"
-                                        :class="status.key"
+                                        class="sh-dash-dot"
+                                        :class="`sh-dash-dot--${status.key}`"
                                     ></span>
 
                                     <div>
@@ -737,232 +672,194 @@ onMounted(() => {
                                             {{ status.subtitle }}
                                         </small>
                                     </div>
+
+                                    <div class="sh-dash-shop-values">
+                                        <strong>
+                                            {{ formatNumber(status.count) }}
+                                        </strong>
+
+                                        <span>
+                                            {{
+                                                percentage(
+                                                    status.count,
+                                                    shopSummary.total
+                                                )
+                                            }}%
+                                        </span>
+                                    </div>
                                 </div>
 
-                                <div class="status-value">
-                                    <strong>
-                                        {{ formatNumber(status.count) }}
-                                    </strong>
-
-                                    <span>
-                                        {{
-                                            percentage(
+                                <div
+                                    class="sh-dash-track sh-dash-track--small"
+                                    role="progressbar"
+                                    :aria-label="`${status.title} shops percentage`"
+                                    :aria-valuenow="percentage(status.count, shopSummary.total)"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"
+                                >
+                                    <span
+                                        class="sh-dash-fill"
+                                        :class="`sh-dash-fill--${status.key}`"
+                                        :style="{
+                                            width: `${percentage(
                                                 status.count,
                                                 shopSummary.total
-                                            )
-                                        }}%
-                                    </span>
+                                            )}%`
+                                        }"
+                                    ></span>
                                 </div>
                             </div>
-
-                            <div class="status-progress">
-                                <div
-                                    class="status-progress-fill"
-                                    :class="status.key"
-                                    :style="{
-                                        width: `${percentage(
-                                            status.count,
-                                            shopSummary.total
-                                        )}%`
-                                    }"
-                                ></div>
-                            </div>
                         </div>
-                    </div>
 
-                    <div
-                        v-if="shopSummary.pending > 0"
-                        class="review-notice"
-                    >
-                        <div class="review-notice-icon">
-                            <svg
-                                viewBox="0 0 24 24"
+                        <div
+                            v-if="Number(shopSummary.pending) > 0"
+                            class="sh-dash-notice"
+                        >
+                            <span
+                                class="sh-dash-notice-symbol"
                                 aria-hidden="true"
                             >
-                                <path
-                                    d="M12 3l8 4v5c0 5-3.4 8.2-8 9.5C7.4 20.2 4 17 4 12V7l8-4z"
-                                />
-                                <path d="M12 8v5M12 16h.01" />
-                            </svg>
-                        </div>
-
-                        <div>
-                            <strong>Pending shop reviews</strong>
-
-                            <span>
-                                {{ formatNumber(shopSummary.pending) }}
-                                shop{{ shopSummary.pending === 1 ? '' : 's' }}
-                                currently require administrator review.
+                                !
                             </span>
-                        </div>
-                    </div>
-                </article>
-            </section>
-
-            <!-- APPOINTMENT AND PLATFORM ACTIVITY -->
-
-            <section class="bottom-grid">
-
-                <!-- APPOINTMENT ACTIVITY -->
-
-                <article class="panel dashboard-panel appointments-panel">
-                    <div class="panel-heading">
-                        <div>
-                            <p class="panel-eyebrow">BOOKINGS</p>
-
-                            <h2>Appointment activity</h2>
 
                             <p>
-                                Current booking status across
-                                all registered shops.
+                                <strong>
+                                    {{ formatNumber(shopSummary.pending) }}
+                                    shop{{ Number(shopSummary.pending) === 1 ? '' : 's' }}
+                                    pending review.
+                                </strong>
+
+                                Awaiting administrator action.
                             </p>
                         </div>
 
-                        <span class="panel-badge">
-                            {{ formatNumber(appointmentSummary.total) }}
-                            total
-                        </span>
-                    </div>
-
-                    <div class="appointment-grid dashboard-appointment-grid">
-                        <div
-                            v-for="item in bookingStatuses"
-                            :key="item.key"
-                            class="appointment-status-card"
-                            :class="`${item.key}-card`"
+                        <p
+                            v-else
+                            class="sh-dash-panel-foot"
                         >
-                            <div class="appointment-status-icon">
-                                <svg
-                                    v-if="item.key === 'pending'"
-                                    viewBox="0 0 24 24"
-                                    aria-hidden="true"
-                                >
-                                    <circle cx="12" cy="12" r="9" />
-                                    <path d="M12 7v5l3 2" />
-                                </svg>
+                            No shop registrations awaiting review
+                        </p>
+                    </article>
+                </div>
+            </section>
 
-                                <svg
-                                    v-else-if="item.key === 'confirmed'"
-                                    viewBox="0 0 24 24"
-                                    aria-hidden="true"
-                                >
-                                    <circle cx="12" cy="12" r="9" />
-                                    <path d="M8 12l3 3 5-6" />
-                                </svg>
+            <!-- PLATFORM ACTIVITY -->
 
-                                <svg
-                                    v-else-if="item.key === 'completed'"
-                                    viewBox="0 0 24 24"
-                                    aria-hidden="true"
-                                >
-                                    <path d="M5 12l4 4L19 6" />
-                                </svg>
+            <section
+                class="sh-dash-section"
+                aria-labelledby="activity-title"
+            >
+                <div class="sh-dash-section-heading">
+                    <h2 id="activity-title">
+                        Platform activity
+                    </h2>
 
-                                <!-- NO-SHOW ICON -->
+                    <span>
+                        Bookings &amp; records
+                    </span>
+                </div>
 
-                                <svg
-                                    v-else-if="item.key === 'no_show'"
-                                    viewBox="0 0 24 24"
-                                    aria-hidden="true"
-                                >
-                                    <circle cx="10" cy="8" r="3" />
-                                    <path
-                                        d="M3 20c0-4 2.5-7 7-7 1.8 0 3.2.4 4.3 1.2"
-                                    />
-                                    <path d="M17 16l5 5M22 16l-5 5" />
-                                </svg>
+                <div class="sh-dash-panels">
 
-                                <svg
-                                    v-else-if="item.key === 'cancelled'"
-                                    viewBox="0 0 24 24"
-                                    aria-hidden="true"
-                                >
-                                    <circle cx="12" cy="12" r="9" />
-                                    <path d="M9 9l6 6M15 9l-6 6" />
-                                </svg>
+                    <!-- APPOINTMENTS -->
 
-                                <svg
-                                    v-else
-                                    viewBox="0 0 24 24"
-                                    aria-hidden="true"
-                                >
-                                    <path d="M7 7l10 10M17 7L7 17" />
-                                </svg>
+                    <article class="sh-dash-panel">
+                        <div class="sh-dash-panel-head">
+                            <div>
+                                <h3>Appointment activity</h3>
+
+                                <p>
+                                    Bookings by current status
+                                </p>
                             </div>
 
-                            <div>
-                                <span>{{ item.title }}</span>
+                            <span class="sh-dash-badge">
+                                {{ formatNumber(appointmentSummary.total) }}
+                                total
+                            </span>
+                        </div>
+
+                        <div class="sh-dash-booking-grid">
+                            <div
+                                v-for="item in bookingStatuses"
+                                :key="item.key"
+                                class="sh-dash-booking-item"
+                            >
+                                <span
+                                    class="sh-dash-booking-dot"
+                                    :class="`sh-dash-booking-dot--${item.key}`"
+                                ></span>
+
+                                <span>
+                                    {{ item.title }}
+                                </span>
+
                                 <strong>
                                     {{ formatNumber(item.count) }}
                                 </strong>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="booking-progress">
-                        <div class="booking-progress-heading">
-                            <span>Completed appointments</span>
+                        <div class="sh-dash-completion">
+                            <div class="sh-dash-completion-head">
+                                <span>
+                                    Completed appointments
+                                </span>
 
-                            <strong>
-                                {{
-                                    percentage(
-                                        appointmentSummary.completed,
-                                        appointmentSummary.total
-                                    )
-                                }}%
-                            </strong>
-                        </div>
+                                <strong>
+                                    {{ appointmentCompletionPercentage }}%
+                                </strong>
+                            </div>
 
-                        <div class="progress-track">
                             <div
-                                class="booking-progress-fill"
-                                :style="{
-                                    width: `${percentage(
-                                        appointmentSummary.completed,
-                                        appointmentSummary.total
-                                    )}%`
-                                }"
-                            ></div>
+                                class="sh-dash-track"
+                                role="progressbar"
+                                aria-label="Completed appointments percentage"
+                                :aria-valuenow="appointmentCompletionPercentage"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            >
+                                <span
+                                    class="sh-dash-fill sh-dash-fill--active"
+                                    :style="{
+                                        width: `${appointmentCompletionPercentage}%`
+                                    }"
+                                ></span>
+                            </div>
                         </div>
-                    </div>
-                </article>
+                    </article>
 
-                <!-- OTHER ACTIVITY -->
+                    <!-- OTHER ACTIVITY -->
 
-                <article class="panel dashboard-panel platform-panel">
-                    <div class="panel-heading">
-                        <div>
-                            <p class="panel-eyebrow">
-                                PLATFORM
-                            </p>
+                    <article class="sh-dash-panel">
+                        <div class="sh-dash-panel-head">
+                            <div>
+                                <h3>Other activity</h3>
 
-                            <h2>Other activity</h2>
-
-                            <p>
-                                Additional activity and records
-                                generated across StyleHub.
-                            </p>
+                                <p>
+                                    Engagement and administration records
+                                </p>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="platform-list dashboard-platform-list">
-                        <div
-                            v-for="item in platformActivity"
-                            :key="item.key"
-                            class="platform-row"
-                        >
-                            <div class="platform-row-left">
-                                <div
-                                    class="platform-icon"
-                                    :class="item.key"
+                        <div class="sh-dash-activity-list">
+                            <div
+                                v-for="item in platformActivity"
+                                :key="item.key"
+                                class="sh-dash-activity-row"
+                            >
+                                <span
+                                    class="sh-dash-activity-icon"
+                                    :class="`sh-dash-activity-icon--${item.key}`"
                                 >
                                     <svg
                                         v-if="item.key === 'feedback'"
                                         viewBox="0 0 24 24"
                                         aria-hidden="true"
                                     >
-                                        <path d="M4 5h16v12H9l-5 4V5z" />
-                                        <path d="M8 9h8M8 13h5" />
+                                        <path
+                                            d="M4 5h16v12H9l-5 4V5zM8 9h8M8 13h5"
+                                        />
                                     </svg>
 
                                     <svg
@@ -970,14 +867,16 @@ onMounted(() => {
                                         viewBox="0 0 24 24"
                                         aria-hidden="true"
                                     >
-                                        <path d="M4 8h16v12H4z" />
-                                        <path
-                                            d="M8 8a2.5 2.5 0 110-5c3 0 4 5 4 5"
+                                        <rect
+                                            x="4"
+                                            y="8"
+                                            width="16"
+                                            height="12"
                                         />
+
                                         <path
-                                            d="M16 8a2.5 2.5 0 100-5c-3 0-4 5-4 5"
+                                            d="M12 8v12M12 8S5 8 5 5.5a2.5 2.5 0 0 1 5 0L12 8zm0 0s7 0 7-2.5a2.5 2.5 0 0 0-5 0L12 8z"
                                         />
-                                        <path d="M12 8v12" />
                                     </svg>
 
                                     <svg
@@ -985,13 +884,13 @@ onMounted(() => {
                                         viewBox="0 0 24 24"
                                         aria-hidden="true"
                                     >
-                                        <path d="M6 3h9l3 3v15H6V3z" />
-                                        <path d="M14 3v4h4" />
-                                        <path d="M9 11h6M9 15h6" />
+                                        <path
+                                            d="M6 3h9l3 3v15H6V3zM14 3v4h4M9 11h6M9 15h6"
+                                        />
                                     </svg>
-                                </div>
+                                </span>
 
-                                <div class="platform-row-copy">
+                                <div class="sh-dash-activity-copy">
                                     <strong>
                                         {{ item.title }}
                                     </strong>
@@ -1000,14 +899,14 @@ onMounted(() => {
                                         {{ item.subtitle }}
                                     </span>
                                 </div>
-                            </div>
 
-                            <div class="platform-value">
-                                {{ formatNumber(item.count) }}
+                                <strong class="sh-dash-activity-count">
+                                    {{ formatNumber(item.count) }}
+                                </strong>
                             </div>
                         </div>
-                    </div>
-                </article>
+                    </article>
+                </div>
             </section>
         </template>
     </div>
@@ -1016,153 +915,861 @@ onMounted(() => {
 <style scoped src="./admin-page.css"></style>
 
 <style scoped>
-.dashboard{display:flex;flex-direction:column}
-.dashboard.dashboard .dashboard-hero{min-height:220px;display:flex;align-items:stretch;justify-content:space-between;gap:30px;padding:30px 32px;margin-bottom:16px;border:1px solid var(--sh-border);border-radius:var(--sh-radius-xl);background:radial-gradient(circle at 94% 10%,rgba(214,154,45,0.07),transparent 26%),var(--sh-surface);box-shadow:var(--sh-shadow-sm)}
-.dashboard-hero-content{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center}
-.dashboard .dashboard-hero h2{max-width:640px;margin:0;color:var(--sh-text);font-size:clamp(26px,3vw,34px);font-weight:800;line-height:1.15;letter-spacing:-1px}
-.dashboard .dashboard-hero .welcome-description{max-width:650px;margin-top:10px;color:var(--sh-text-3);font-size:11.5px;line-height:18px}
-.hero-summary{width:fit-content;display:flex;align-items:center;gap:18px;margin-top:19px;padding:11px 14px;border:1px solid var(--sh-border);border-radius:12px;background:var(--sh-surface-muted)}
-.hero-summary-item{display:flex;flex-direction:column;gap:2px}
-.dashboard .dashboard-hero .hero-summary-item span{color:var(--sh-text-3);font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
-.dashboard .dashboard-hero .hero-summary-item strong{color:var(--sh-text);font-size:14px;font-weight:800}
-.hero-summary-divider{width:1px;height:28px;background:var(--sh-border)}
-.dashboard-hero-actions{width:230px;flex:0 0 230px;display:flex;flex-direction:column;justify-content:space-between;padding:5px 0}
-.welcome-section .hero-refresh{width:100%;border-color:var(--sh-border);background:var(--sh-surface);color:var(--sh-text-2);box-shadow:none}
-.welcome-section .hero-refresh:hover:not(:disabled){border-color:rgba(214,154,45,0.40);background:var(--sh-accent-soft);color:var(--sh-text)}
-.dashboard-error{align-items:center}
-.error-panel-icon{width:38px;height:38px;flex:0 0 38px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:rgba(169,79,79,0.09)}
-.error-panel-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.error-panel-copy{min-width:0;flex:1}
-.error-panel-copy strong{display:block;font-size:10.5px}
-.error-panel-copy p{margin:3px 0 0}
-.dashboard-stat-card{min-height:132px;display:flex;align-items:center;gap:14px;transition:transform 0.16s ease,box-shadow 0.16s ease,border-color 0.16s ease}
-.dashboard-stat-card:hover{transform:translateY(-2px);border-color:#d9dee5;box-shadow:var(--sh-shadow-card)}
-.dashboard-stat-card .overview-icon{width:45px;height:45px;flex:0 0 45px}
-.dashboard-stat-card .overview-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
-.overview-icon.customers{background:var(--sh-info-bg);color:var(--sh-info)}
-.overview-icon.owners{background:var(--sh-purple-bg);color:var(--sh-purple)}
-.overview-icon.shops{background:var(--sh-success-bg);color:var(--sh-success)}
-.overview-icon.appointments{background:var(--sh-accent-soft);color:var(--sh-accent)}
-.overview-copy{min-width:0;flex:1}
-.stat-label{display:block;color:var(--sh-text-3);font-size:9.5px;font-weight:700}
-.dashboard-stat-card .overview-copy strong{margin-top:4px;font-size:24px;line-height:29px}
-.stat-description{display:flex;align-items:center;gap:5px;margin-top:5px;color:var(--sh-text-3);font-size:9px}
-.stat-description-dot{width:5px;height:5px;flex:0 0 5px;border-radius:999px;background:var(--sh-success)}
-.stat-arrow{width:27px;height:27px;flex:0 0 27px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#f6f8fa;color:#a1a8b2}
-.stat-arrow svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.dashboard-detail-grid{margin-top:14px}
-.dashboard-panel{overflow:hidden;padding:19px}
-.dashboard-panel .panel-heading{padding-bottom:15px;border-bottom:1px solid var(--sh-border)}
-.dashboard-panel .panel-heading h2{font-size:15px;line-height:21px}
-.dashboard-panel .panel-heading p:not(.panel-eyebrow){max-width:400px}
-.account-overview{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:17px}
-.account-overview-main{min-width:0;display:flex;align-items:center;gap:11px}
-.account-overview-number{color:var(--sh-text);font-size:27px;font-weight:800;letter-spacing:-0.7px}
-.account-overview-copy{display:flex;flex-direction:column;gap:2px}
-.account-overview-copy strong{color:var(--sh-text-2);font-size:10px}
-.account-overview-copy span{color:var(--sh-text-3);font-size:9px}
-.account-health{min-height:25px;display:inline-flex;align-items:center;padding:0 8px;border:1px solid #d4ebdf;border-radius:999px;background:var(--sh-success-bg);color:var(--sh-success);font-size:8px;font-weight:800;text-transform:uppercase}
-.overall-progress{height:6px;margin-top:11px;overflow:hidden;border-radius:999px;background:#edf0f4}
-.overall-progress-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--sh-success),#51b889)}
-.dashboard-account-groups{margin-top:17px}
-.dashboard-account-card{display:flex;flex-direction:column;gap:11px;padding:13px;border:1px solid var(--sh-border);border-radius:12px;background:#fbfcfd}
-.account-title{min-width:0}
-.account-title-left{min-width:0;display:flex;align-items:center;gap:9px}
-.account-title-left > div{min-width:0;display:flex;flex-direction:column;gap:2px}
-.account-title-left span{color:var(--sh-text-3);font-size:8.5px}
-.account-title b{color:var(--sh-text);font-size:16px;font-weight:800}
-.account-icon{width:34px;height:34px;flex:0 0 34px;display:flex;align-items:center;justify-content:center;border-radius:9px}
-.account-icon.customers{background:var(--sh-info-bg);color:var(--sh-info)}
-.account-icon.owners{background:var(--sh-purple-bg);color:var(--sh-purple)}
-.account-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.progress-fill.active{background:var(--sh-success)!important}
-.breakdown{display:flex;align-items:center;justify-content:space-between;gap:9px}
-.breakdown > span{display:flex;align-items:center;gap:5px;color:var(--sh-text-3);font-size:8.5px}
-.breakdown strong{color:var(--sh-text-2);font-size:9px}
-.dot.active{background:var(--sh-success)!important}
-.dot.suspended{background:var(--sh-danger)!important}
-.panel-footer-note{display:flex;align-items:center;gap:7px;margin-top:14px;padding-top:13px;border-top:1px solid var(--sh-border);color:var(--sh-text-3);font-size:8.5px}
-.panel-footer-note svg{width:14px;height:14px;flex:0 0 14px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.shop-status-summary{display:flex;flex-direction:column;gap:17px;margin-top:18px}
-.shop-status-block{display:flex;flex-direction:column;gap:8px}
-.shop-status-block .status-row{min-height:0;padding:0;border:0}
-.status-name{display:flex;align-items:center;gap:9px}
-.status-name > div{display:flex;flex-direction:column;gap:1px}
-.status-name strong{color:var(--sh-text-2);font-size:10px}
-.status-name small{color:var(--sh-text-3);font-size:8.5px}
-.status-marker{width:9px;height:9px;flex:0 0 9px;border:0!important}
-.status-marker.approved{background:var(--sh-success)!important}
-.status-marker.pending{background:var(--sh-warning)!important}
-.status-marker.rejected{background:var(--sh-danger)!important}
-.status-value{display:flex;align-items:baseline;gap:6px}
-.status-value strong{color:var(--sh-text);font-size:13px;font-weight:800}
-.status-value span{color:var(--sh-text-3);font-size:8px}
-.status-progress-fill.approved{background:var(--sh-success)!important}
-.status-progress-fill.pending{background:var(--sh-warning)!important}
-.status-progress-fill.rejected{background:var(--sh-danger)!important}
-.review-notice{display:flex;align-items:flex-start;gap:9px;margin-top:17px;padding:11px 12px;border:1px solid #f0dfb9;border-radius:11px;background:var(--sh-warning-bg)}
-.review-notice-icon{width:32px;height:32px;flex:0 0 32px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:rgba(154,103,31,0.08);color:var(--sh-warning)}
-.review-notice-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.review-notice > div:last-child{min-width:0;display:flex;flex-direction:column;gap:2px}
-.review-notice strong{color:#80591f;font-size:9.5px}
-.review-notice span{color:#99733b;font-size:8.5px;line-height:14px}
-.dashboard-appointment-grid{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:17px}
-.appointment-status-card{min-width:0;min-height:72px;display:flex;align-items:center;gap:9px;padding:11px;border:1px solid var(--sh-border);border-radius:11px;background:#fbfcfd}
-.appointment-status-icon{width:34px;height:34px;flex:0 0 34px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:#f1f3f6;color:var(--sh-text-3)}
-.appointment-status-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.appointment-status-card > div:last-child{min-width:0;display:flex;flex-direction:column;gap:2px}
-.appointment-status-card span{color:var(--sh-text-3);font-size:8.5px;font-weight:700}
-.appointment-status-card strong{color:var(--sh-text);font-size:15px;font-weight:800}
-.pending-card .appointment-status-icon{background:var(--sh-warning-bg);color:var(--sh-warning)}
-.confirmed-card .appointment-status-icon{background:var(--sh-info-bg);color:var(--sh-info)}
-.completed-card .appointment-status-icon{background:var(--sh-success-bg);color:var(--sh-success)}
-.no_show-card .appointment-status-icon{background:var(--sh-warning-bg);color:var(--sh-warning)}
-.cancelled-card .appointment-status-icon,.declined-card .appointment-status-icon{background:var(--sh-danger-bg);color:var(--sh-danger)}
-.booking-progress{margin-top:18px;padding-top:14px;border-top:1px solid var(--sh-border)}
-.booking-progress-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px;color:var(--sh-text-3);font-size:8.5px}
-.booking-progress-heading strong{color:var(--sh-success);font-size:9px}
-.booking-progress-fill{height:100%;border-radius:inherit;background:var(--sh-success)}
-.dashboard-platform-list{gap:0;margin-top:9px}
-.dashboard-platform-list .platform-row{justify-content:space-between;min-height:69px;padding:11px 0}
-.platform-row-left{min-width:0;display:flex;align-items:center;gap:10px}
-.platform-icon{width:38px;height:38px;flex:0 0 38px}
-.platform-icon.feedback{background:var(--sh-info-bg);color:var(--sh-info)}
-.platform-icon.promo{background:var(--sh-accent-soft);color:var(--sh-accent)}
-.platform-icon.audit{background:var(--sh-purple-bg);color:var(--sh-purple)}
-.platform-icon svg{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.platform-row-copy{min-width:0;display:flex;flex-direction:column;gap:2px}
-.platform-row-copy strong{color:var(--sh-text-2);font-size:10px}
-.platform-row-copy span{color:var(--sh-text-3);font-size:8.5px}
-.platform-value{min-width:52px;color:var(--sh-text);font-size:16px;font-weight:800;text-align:right}
-.dashboard-skeleton-card{display:flex;align-items:center;gap:14px}
-.skeleton-icon{width:45px;height:45px;flex:0 0 45px;border-radius:13px}
-.dashboard-skeleton-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:8px}
-.skeleton-label{width:70px;height:8px}
-.skeleton-number{width:95px;height:22px}
-.skeleton-description{width:125px;height:8px}
-.skeleton-panel{min-height:340px}
-.spinning{animation:dashboard-spin 0.8s linear infinite}
-@keyframes dashboard-spin{to{transform:rotate(360deg)}}
-@media (max-width:1200px){
-    .dashboard.dashboard .dashboard-hero{min-height:210px}
-    .dashboard-appointment-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+/*
+|--------------------------------------------------------------------------
+| MAIN DASHBOARD LAYOUT
+|--------------------------------------------------------------------------
+*/
+
+.sh-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 27px;
+    color: var(--sh-text);
 }
-@media (max-width:900px){
-    .dashboard.dashboard .dashboard-hero{min-height:0;align-items:flex-start;flex-direction:column;padding:21px}
-    .dashboard-hero-actions{width:100%;flex-basis:auto;flex-direction:row;gap:10px}
-    .hero-summary{width:100%;justify-content:space-between}
-    .dashboard-account-groups{grid-template-columns:1fr}
+
+/*
+|--------------------------------------------------------------------------
+| HEADER
+|--------------------------------------------------------------------------
+*/
+
+.sh-dash-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
 }
-@media (max-width:680px){
-    .dashboard.dashboard .dashboard-hero{gap:20px;padding:18px}
-    .dashboard-hero h2{font-size:24px}
-    .hero-summary{align-items:stretch;flex-direction:column;gap:8px;padding:12px}
-    .hero-summary-item{flex-direction:row;align-items:center;justify-content:space-between}
-    .hero-summary-divider{width:100%;height:1px}
-    .dashboard-hero-actions{flex-direction:column}
-    .dashboard-stat-card{min-height:110px}
-    .dashboard-appointment-grid{grid-template-columns:1fr}
-    .account-overview{align-items:flex-start;flex-direction:column}
-    .breakdown{align-items:flex-start;flex-direction:column}
+
+.sh-dash-heading {
+    min-width: 0;
+}
+
+.sh-dash-eyebrow {
+    margin: 0 0 8px;
+    color: var(--sh-accent);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+}
+
+.sh-dash-header h1 {
+    margin: 0;
+    color: var(--sh-text);
+    font-size: clamp(27px, 2.5vw, 33px);
+    font-weight: 750;
+    line-height: 1.2;
+    letter-spacing: -0.9px;
+}
+
+.sh-dash-subtitle {
+    margin: 8px 0 0;
+    color: var(--sh-text-3);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.sh-dash-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 0 0 auto;
+}
+
+.sh-dash-updated {
+    color: var(--sh-text-3);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.sh-dash-refresh,
+.sh-dash-error button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 39px;
+    padding: 0 15px;
+    border: 1px solid var(--sh-border-strong);
+    border-radius: 10px;
+    background: var(--sh-surface);
+    color: var(--sh-text-2);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        border-color 0.15s ease,
+        background 0.15s ease;
+}
+
+.sh-dash-refresh:hover:not(:disabled),
+.sh-dash-error button:hover:not(:disabled) {
+    border-color: var(--sh-accent);
+    background: var(--sh-accent-soft);
+}
+
+.sh-dash-refresh:focus-visible,
+.sh-dash-error button:focus-visible {
+    outline: 2px solid var(--sh-accent);
+    outline-offset: 2px;
+}
+
+.sh-dash-refresh:disabled,
+.sh-dash-error button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.sh-dash-refresh svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/*
+|--------------------------------------------------------------------------
+| SECTION HEADINGS
+|--------------------------------------------------------------------------
+*/
+
+.sh-dash-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+}
+
+.sh-dash-section-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.sh-dash-section-heading h2 {
+    margin: 0;
+    color: var(--sh-text);
+    font-size: 16px;
+    line-height: 1.4;
+    font-weight: 750;
+    letter-spacing: -0.3px;
+}
+
+.sh-dash-section-heading > span {
+    color: var(--sh-text-3);
+    font-size: 11px;
+}
+
+/*
+|--------------------------------------------------------------------------
+| STATISTIC CARDS
+|--------------------------------------------------------------------------
+*/
+
+.sh-dash-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.sh-dash-metric,
+.sh-dash-panel {
+    min-width: 0;
+    border: 1px solid var(--sh-border);
+    border-radius: var(--sh-radius-lg, 16px);
+    background: var(--sh-surface);
+    box-shadow: var(--sh-shadow-sm);
+}
+
+.sh-dash-metric {
+    padding: 20px 21px 19px;
+    min-height: 155px;
+}
+
+.sh-dash-metric-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.sh-dash-metric-label {
+    padding-top: 4px;
+    color: var(--sh-text-2);
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.sh-dash-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 11px;
+}
+
+.sh-dash-icon svg,
+.sh-dash-activity-icon svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.sh-dash-icon--customers {
+    background: var(--sh-info-bg);
+    color: var(--sh-info);
+}
+
+.sh-dash-icon--owners {
+    background: var(--sh-purple-bg);
+    color: var(--sh-purple);
+}
+
+.sh-dash-icon--shops {
+    background: var(--sh-success-bg);
+    color: var(--sh-success);
+}
+
+.sh-dash-icon--appointments {
+    background: var(--sh-accent-soft);
+    color: var(--sh-accent);
+}
+
+.sh-dash-metric-value {
+    display: block;
+    margin-top: 1px;
+    color: var(--sh-text);
+    font-size: clamp(25px, 2.6vw, 32px);
+    font-weight: 780;
+    line-height: 1.2;
+    letter-spacing: -0.8px;
+}
+
+.sh-dash-metric-detail {
+    margin: 7px 0 0;
+    color: var(--sh-text-3);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/*
+|--------------------------------------------------------------------------
+| DETAIL PANELS
+|--------------------------------------------------------------------------
+*/
+
+.sh-dash-panels {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-items: stretch;
+}
+
+.sh-dash-panel {
+    display: flex;
+    flex-direction: column;
+    padding: 23px;
+}
+
+.sh-dash-panel-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 15px;
+    padding-bottom: 19px;
+    border-bottom: 1px solid var(--sh-border);
+}
+
+.sh-dash-panel-head h3 {
+    margin: 0;
+    color: var(--sh-text);
+    font-size: 17px;
+    font-weight: 750;
+    line-height: 1.35;
+    letter-spacing: -0.3px;
+}
+
+.sh-dash-panel-head p {
+    margin: 5px 0 0;
+    color: var(--sh-text-3);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.sh-dash-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 27px;
+    flex: 0 0 auto;
+    padding: 0 10px;
+    border: 1px solid var(--sh-border);
+    border-radius: 8px;
+    background: var(--sh-surface-muted);
+    color: var(--sh-text-2);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/*
+|--------------------------------------------------------------------------
+| USER ACCOUNTS
+|--------------------------------------------------------------------------
+*/
+
+.sh-dash-main-total {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 21px 0 13px;
+}
+
+.sh-dash-field-label {
+    color: var(--sh-text-3);
+    font-size: 12px;
+}
+
+.sh-dash-main-number {
+    margin-top: 4px;
+    color: var(--sh-text);
+    font-size: 30px;
+    font-weight: 780;
+    letter-spacing: -0.8px;
+    line-height: 1.1;
+}
+
+.sh-dash-percent {
+    padding-bottom: 3px;
+    color: var(--sh-success);
+    font-size: 12px;
+    font-weight: 750;
+    white-space: nowrap;
+}
+
+.sh-dash-track {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--sh-border);
+}
+
+.sh-dash-track--small {
+    height: 6px;
+    margin-top: 12px;
+}
+
+.sh-dash-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+}
+
+.sh-dash-fill--active,
+.sh-dash-fill--approved {
+    background: var(--sh-success);
+}
+
+.sh-dash-fill--pending {
+    background: var(--sh-warning);
+}
+
+.sh-dash-fill--rejected {
+    background: var(--sh-danger);
+}
+
+.sh-dash-account-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px;
+    margin-top: 22px;
+}
+
+.sh-dash-account-row {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid var(--sh-border);
+    border-radius: 12px;
+    background: var(--sh-surface-muted);
+}
+
+.sh-dash-account-title,
+.sh-dash-account-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.sh-dash-account-title strong {
+    color: var(--sh-text);
+    font-size: 12px;
+    font-weight: 750;
+}
+
+.sh-dash-account-title strong:last-child {
+    font-size: 16px;
+}
+
+.sh-dash-account-meta {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    gap: 8px 13px;
+}
+
+.sh-dash-account-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--sh-text-3);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.sh-dash-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
+    border-radius: 50%;
+    background: var(--sh-text-3);
+}
+
+.sh-dash-dot--active,
+.sh-dash-dot--approved {
+    background: var(--sh-success);
+}
+
+.sh-dash-dot--suspended,
+.sh-dash-dot--rejected {
+    background: var(--sh-danger);
+}
+
+.sh-dash-dot--pending {
+    background: var(--sh-warning);
+}
+
+.sh-dash-panel-foot {
+    margin: auto 0 0;
+    padding-top: 18px;
+    color: var(--sh-text-3);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+/*
+|--------------------------------------------------------------------------
+| SHOP APPROVALS
+|--------------------------------------------------------------------------
+*/
+
+.sh-dash-shop-list {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    margin-top: 23px;
+}
+
+.sh-dash-shop-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sh-dash-shop-info > div:nth-child(2) {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 3px;
+}
+
+.sh-dash-shop-info strong {
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.sh-dash-shop-info small {
+    color: var(--sh-text-3);
+    font-size: 11px;
+}
+
+.sh-dash-shop-values {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.sh-dash-shop-values strong {
+    color: var(--sh-text);
+    font-size: 15px;
+}
+
+.sh-dash-shop-values span {
+    min-width: 33px;
+    color: var(--sh-text-3);
+    font-size: 11px;
+    text-align: right;
+}
+
+.sh-dash-notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: auto;
+    padding: 20px 0 0;
+}
+
+.sh-dash-notice-symbol {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 23px;
+    height: 23px;
+    flex: 0 0 23px;
+    border-radius: 50%;
+    background: var(--sh-warning-bg);
+    color: var(--sh-warning);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.sh-dash-notice p {
+    margin: 0;
+    color: var(--sh-text-3);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.sh-dash-notice strong {
+    color: var(--sh-warning);
+    font-weight: 700;
+}
+
+/*
+|--------------------------------------------------------------------------
+| APPOINTMENT ACTIVITY
+|--------------------------------------------------------------------------
+*/
+
+.sh-dash-booking-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 11px;
+    margin-top: 22px;
+}
+
+.sh-dash-booking-item {
+    display: grid;
+    grid-template-columns: 8px minmax(0, 1fr);
+    align-content: center;
+    align-items: center;
+    column-gap: 8px;
+    min-height: 91px;
+    padding: 14px;
+    border: 1px solid var(--sh-border);
+    border-radius: 12px;
+    background: var(--sh-surface-muted);
+}
+
+.sh-dash-booking-item > span:nth-child(2) {
+    overflow: hidden;
+    color: var(--sh-text-3);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sh-dash-booking-item strong {
+    grid-column: 1 / -1;
+    margin-top: 9px;
+    color: var(--sh-text);
+    font-size: 21px;
+    font-weight: 780;
+    line-height: 1.1;
+}
+
+.sh-dash-booking-dot {
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--sh-text-3);
+}
+
+.sh-dash-booking-dot--pending,
+.sh-dash-booking-dot--no_show {
+    background: var(--sh-warning);
+}
+
+.sh-dash-booking-dot--confirmed {
+    background: var(--sh-info);
+}
+
+.sh-dash-booking-dot--completed {
+    background: var(--sh-success);
+}
+
+.sh-dash-booking-dot--cancelled,
+.sh-dash-booking-dot--declined {
+    background: var(--sh-danger);
+}
+
+.sh-dash-completion {
+    margin-top: auto;
+    padding-top: 21px;
+}
+
+.sh-dash-completion-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 11px;
+}
+
+.sh-dash-completion-head span {
+    color: var(--sh-text-2);
+    font-size: 12px;
+}
+
+.sh-dash-completion-head strong {
+    color: var(--sh-success);
+    font-size: 12px;
+}
+
+/*
+|--------------------------------------------------------------------------
+| OTHER ACTIVITY
+|--------------------------------------------------------------------------
+*/
+
+.sh-dash-activity-list {
+    display: flex;
+    flex-direction: column;
+    margin-top: 6px;
+}
+
+.sh-dash-activity-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 93px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--sh-border);
+}
+
+.sh-dash-activity-row:last-child {
+    border-bottom: none;
+}
+
+.sh-dash-activity-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 43px;
+    height: 43px;
+    flex: 0 0 43px;
+    border-radius: 11px;
+}
+
+.sh-dash-activity-icon--feedback {
+    background: var(--sh-info-bg);
+    color: var(--sh-info);
+}
+
+.sh-dash-activity-icon--promo {
+    background: var(--sh-accent-soft);
+    color: var(--sh-accent);
+}
+
+.sh-dash-activity-icon--audit {
+    background: var(--sh-purple-bg);
+    color: var(--sh-purple);
+}
+
+.sh-dash-activity-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.sh-dash-activity-copy strong {
+    color: var(--sh-text-2);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.sh-dash-activity-copy span {
+    color: var(--sh-text-3);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.sh-dash-activity-count {
+    margin-left: auto;
+    color: var(--sh-text);
+    font-size: 21px;
+    font-weight: 780;
+}
+
+/*
+|--------------------------------------------------------------------------
+| ERROR STATE
+|--------------------------------------------------------------------------
+*/
+
+.sh-dash-error {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    padding: 15px 18px;
+    border: 1px solid var(--sh-danger);
+    border-radius: 12px;
+    background: var(--sh-danger-bg);
+}
+
+.sh-dash-error strong {
+    color: var(--sh-danger);
+    font-size: 13px;
+}
+
+.sh-dash-error p {
+    margin: 4px 0 0;
+    color: var(--sh-text-2);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/*
+|--------------------------------------------------------------------------
+| RESPONSIVE DESIGN
+|--------------------------------------------------------------------------
+*/
+
+@media (max-width: 1250px) {
+    .sh-dash-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sh-dash-account-list {
+        grid-template-columns: 1fr;
+    }
+
+    .sh-dash-booking-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+    .sh-dash-panels {
+        grid-template-columns: 1fr;
+    }
+
+    .sh-dash-account-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sh-dash-booking-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 620px) {
+    .sh-dashboard {
+        gap: 24px;
+    }
+
+    .sh-dash-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .sh-dash-toolbar {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .sh-dash-metrics {
+        gap: 11px;
+    }
+
+    .sh-dash-metric {
+        min-height: 142px;
+        padding: 15px;
+    }
+
+    .sh-dash-icon {
+        width: 34px;
+        height: 34px;
+        flex-basis: 34px;
+    }
+
+    .sh-dash-icon svg {
+        width: 17px;
+        height: 17px;
+    }
+
+    .sh-dash-metric-label {
+        font-size: 12px;
+    }
+
+    .sh-dash-metric-value {
+        font-size: 25px;
+    }
+
+    .sh-dash-metric-detail {
+        font-size: 11px;
+    }
+
+    .sh-dash-panel {
+        padding: 18px;
+    }
+
+    .sh-dash-account-list {
+        grid-template-columns: 1fr;
+    }
+
+    .sh-dash-booking-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sh-dash-section-heading > span {
+        display: none;
+    }
+
+    .sh-dash-error {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 375px) {
+    .sh-dash-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .sh-dash-metric {
+        min-height: 128px;
+    }
+
+    .sh-dash-badge {
+        font-size: 10px;
+    }
 }
 </style>

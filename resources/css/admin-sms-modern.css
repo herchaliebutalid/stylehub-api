@@ -1,0 +1,679 @@
+/*
+ * STYLEHUB ADMIN — SMS MONITORING
+ * Appearance only. Existing API requests, filters, pagination, view actions,
+ * TextBee/Semaphore labels and retry-eligibility rules remain unchanged.
+ * All colors are from the established StyleHub theme.
+ */
+
+/* Header and total count */
+#app .sms-page {
+    gap: 24px;
+}
+
+#app .sms-page .sms-intro {
+    min-height: 0;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+#app .sms-page .sms-intro h2 {
+    margin: 0;
+    color: var(--sh-text);
+    font-size: clamp(27px, 2.5vw, 33px);
+    font-weight: 750;
+    line-height: 1.2;
+    letter-spacing: -0.9px;
+}
+
+#app .sms-page .sms-intro p {
+    max-width: 680px;
+    margin: 8px 0 0;
+    color: var(--sh-text-3);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+#app .sms-page .sms-intro-actions {
+    gap: 11px;
+}
+
+#app .sms-page .sms-total-card {
+    min-width: 170px;
+    gap: 11px;
+    padding: 9px 12px;
+    border: 1px solid var(--sh-border);
+    border-radius: 11px;
+    background: var(--sh-surface);
+}
+
+#app .sms-page .sms-total-icon {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 10px;
+}
+
+#app .sms-page .sms-total-card span {
+    color: var(--sh-text-3);
+    font-size: 11px;
+    font-weight: 650;
+}
+
+#app .sms-page .sms-total-card strong {
+    color: var(--sh-text);
+    font-size: 19px;
+    font-weight: 780;
+    line-height: 1.15;
+}
+
+#app .sms-page .sms-refresh-button {
+    min-height: 43px;
+    gap: 8px;
+    padding: 0 16px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* Provider information */
+#app .sms-page .sms-info-banner {
+    align-items: center;
+    gap: 13px;
+    padding: 15px 18px;
+    border: 1px solid var(--sh-border);
+    border-left: 3px solid var(--sh-info);
+    border-radius: 12px;
+    background: var(--sh-info-bg);
+}
+
+#app .sms-page .sms-info-icon {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border-radius: 11px;
+    background: var(--sh-surface);
+    color: var(--sh-info);
+}
+
+#app .sms-page .sms-info-banner strong {
+    color: var(--sh-text);
+    font-size: 13px;
+    font-weight: 750;
+}
+
+#app .sms-page .sms-info-banner p {
+    max-width: 1060px;
+    margin: 5px 0 0;
+    color: var(--sh-text-2);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+#app .sms-page .sms-info-banner b {
+    color: var(--sh-text);
+    font-weight: 750;
+}
+
+/* Eight operational summary metrics */
+#app .sms-page .sms-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+#app .sms-page .sms-summary-card {
+    min-height: 145px;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 18px;
+    border: 1px solid var(--sh-border);
+    border-radius: var(--sh-radius-lg);
+    background: var(--sh-surface);
+    box-shadow: var(--sh-shadow-sm);
+}
+
+#app .sms-page .sms-summary-icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 11px;
+}
+
+#app .sms-page .sms-summary-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+#app .sms-page .sms-summary-copy {
+    min-width: 0;
+    flex: 1;
+    align-items: flex-start;
+    gap: 0;
+}
+
+#app .sms-page .sms-summary-copy span {
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.5;
+}
+
+#app .sms-page .sms-summary-copy strong {
+    margin-top: 13px;
+    color: var(--sh-text);
+    font-size: clamp(26px, 2.5vw, 31px);
+    font-weight: 780;
+    line-height: 1.1;
+    letter-spacing: -0.8px;
+}
+
+#app .sms-page .sms-summary-copy small {
+    margin-top: 8px;
+    color: var(--sh-text-3);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+/* Filter form */
+#app .sms-page .sms-filter-card {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--sh-border);
+    border-radius: var(--sh-radius-lg);
+    background: var(--sh-surface);
+    box-shadow: var(--sh-shadow-sm);
+}
+
+#app .sms-page .sms-section-heading {
+    min-height: 82px;
+    gap: 16px;
+    margin: 0;
+    padding: 19px 22px;
+    border-bottom: 1px solid var(--sh-border);
+}
+
+#app .sms-page .sms-heading-left {
+    min-width: 0;
+    gap: 12px;
+}
+
+#app .sms-page .sms-heading-icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 11px;
+    background: var(--sh-surface-muted);
+    color: var(--sh-text-2);
+}
+
+#app .sms-page .sms-section-heading h3,
+#app .sms-page .sms-table-heading h3 {
+    margin: 0;
+    color: var(--sh-text);
+    font-size: 16px;
+    font-weight: 750;
+    line-height: 1.3;
+}
+
+#app .sms-page .sms-section-heading p,
+#app .sms-page .sms-table-heading p {
+    margin: 4px 0 0;
+    color: var(--sh-text-3);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+#app .sms-page .sms-filter-count {
+    min-height: 28px;
+    padding: 0 11px;
+    border: 1px solid var(--sh-border);
+    border-radius: 8px;
+    background: var(--sh-accent-soft);
+    color: var(--sh-warning);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+#app .sms-page .sms-filters {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: end;
+    gap: 18px 15px;
+    padding: 22px;
+}
+
+#app .sms-page .sms-search-field {
+    grid-column: span 2;
+}
+
+#app .sms-page .sms-filters .search-field label,
+#app .sms-page .sms-filters .filter-field label {
+    margin-bottom: 8px;
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+#app .sms-page .sms-filters input,
+#app .sms-page .sms-filters select {
+    width: 100%;
+    min-height: 43px;
+    border: 1px solid var(--sh-border-strong);
+    border-radius: 10px;
+    background: var(--sh-surface);
+    color: var(--sh-text);
+    font-size: 13px;
+}
+
+#app .sms-page .sms-filters input::placeholder {
+    color: var(--sh-text-3);
+}
+
+#app .sms-page .sms-filters input:focus,
+#app .sms-page .sms-filters select:focus {
+    border-color: var(--sh-accent);
+    outline: 2px solid var(--sh-accent-soft);
+    outline-offset: 0;
+}
+
+#app .sms-page .sms-filter-actions {
+    grid-column: span 2;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+#app .sms-page .sms-filter-actions button {
+    min-height: 43px;
+    padding: 0 18px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* Loading and error states */
+#app .sms-page .sms-error {
+    gap: 14px;
+    margin: 0;
+    padding: 16px 18px;
+    font-size: 12px;
+}
+
+#app .sms-page .sms-error-copy strong {
+    color: var(--sh-danger);
+    font-size: 13px;
+    font-weight: 750;
+}
+
+#app .sms-page .sms-error-copy p {
+    margin: 5px 0 0;
+    color: var(--sh-text-2);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+#app .sms-page .sms-error .retry-button {
+    min-height: 38px;
+    padding: 0 13px;
+    font-size: 12px;
+}
+
+#app .sms-page .sms-empty {
+    min-height: 290px;
+    gap: 10px;
+    padding: 36px 20px;
+}
+
+#app .sms-page .sms-empty strong {
+    color: var(--sh-text);
+    font-size: 16px;
+    font-weight: 750;
+}
+
+#app .sms-page .sms-empty p {
+    max-width: 420px;
+    color: var(--sh-text-3);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+#app .sms-page .sms-empty .secondary-button {
+    min-height: 38px;
+    padding: 0 15px;
+    font-size: 12px;
+}
+
+/* Delivery records */
+#app .sms-page .sms-card {
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--sh-border);
+    border-radius: var(--sh-radius-lg);
+    background: var(--sh-surface);
+    box-shadow: var(--sh-shadow-sm);
+}
+
+#app .sms-page .sms-table-heading {
+    min-height: 86px;
+    gap: 16px;
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--sh-border);
+}
+
+#app .sms-page .sms-table-heading .sms-heading-icon {
+    background: var(--sh-accent-soft);
+    color: var(--sh-accent);
+}
+
+#app .sms-page .sms-table-actions {
+    gap: 13px;
+}
+
+#app .sms-page .sms-per-page {
+    gap: 10px;
+}
+
+#app .sms-page .sms-per-page label {
+    margin: 0;
+    color: var(--sh-text-3);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+#app .sms-page .sms-per-page select {
+    width: 76px;
+    min-height: 38px;
+    padding: 6px 10px;
+    border: 1px solid var(--sh-border-strong);
+    border-radius: 9px;
+    background: var(--sh-surface);
+    color: var(--sh-text-2);
+    font-size: 12px;
+}
+
+#app .sms-page .sms-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+#app .sms-page .sms-table-wrapper table {
+    width: 100%;
+    min-width: 1360px;
+}
+
+#app .sms-page .sms-table-wrapper th {
+    padding: 15px 16px;
+    border-bottom: 1px solid var(--sh-border);
+    background: var(--sh-surface-muted);
+    color: var(--sh-text-3);
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0.045em;
+}
+
+#app .sms-page .sms-table-wrapper td {
+    padding: 17px 16px;
+    border-bottom: 1px solid var(--sh-border);
+    color: var(--sh-text-2);
+    font-size: 12px;
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+#app .sms-page .sms-table-wrapper tbody tr:hover {
+    background: var(--sh-surface-muted);
+}
+
+#app .sms-page .sms-cell-with-icon {
+    gap: 11px;
+}
+
+#app .sms-page .sms-record-icon,
+#app .sms-page .sms-avatar {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border-radius: 11px;
+}
+
+#app .sms-page .sms-avatar {
+    font-size: 14px;
+    font-weight: 750;
+}
+
+#app .sms-page .sms-stacked {
+    gap: 4px;
+}
+
+#app .sms-page .sms-stacked strong {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--sh-text);
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 1.45;
+}
+
+#app .sms-page .sms-stacked span {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--sh-text-3);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+#app .sms-page .sms-stacked .sms-legacy-provider {
+    color: var(--sh-warning);
+    font-weight: 700;
+}
+
+/* Preserve status, failure and retry semantics */
+#app .sms-page .sms-status {
+    min-height: 29px;
+    gap: 8px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 750;
+    line-height: 1.4;
+}
+
+#app .sms-page .sms-status-dot {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+}
+
+#app .sms-page .sms-failure {
+    gap: 6px;
+}
+
+#app .sms-page .sms-failure-badge,
+#app .sms-page .sms-retry-badge {
+    min-height: 26px;
+    padding: 4px 9px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+#app .sms-page .sms-date {
+    color: var(--sh-text-3);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+#app .sms-page .sms-view {
+    min-height: 37px;
+    gap: 7px;
+    padding: 0 13px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* Pagination */
+#app .sms-page .sms-pagination {
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 17px 22px;
+    border-top: 1px solid var(--sh-border);
+    background: var(--sh-surface);
+}
+
+#app .sms-page .sms-pagination-summary {
+    color: var(--sh-text-3);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+#app .sms-page .sms-pagination-summary strong {
+    color: var(--sh-text-2);
+    font-weight: 750;
+}
+
+#app .sms-page .pagination-buttons {
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+#app .sms-page .pagination-buttons .page-button {
+    min-height: 35px;
+    padding: 0 11px;
+    border-radius: 9px;
+    font-size: 12px;
+}
+
+/* Responsive layout */
+@media (max-width: 1200px) {
+    #app .sms-page .sms-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #app .sms-page .sms-filters {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    #app .sms-page .sms-search-field {
+        grid-column: span 2;
+    }
+
+    #app .sms-page .sms-filter-actions {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 850px) {
+    #app .sms-page .sms-intro {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #app .sms-page .sms-intro-actions {
+        width: 100%;
+    }
+
+    #app .sms-page .sms-total-card {
+        flex: 1;
+    }
+
+    #app .sms-page .sms-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #app .sms-page .sms-filter-actions {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 600px) {
+    #app .sms-page {
+        gap: 18px;
+    }
+
+    #app .sms-page .sms-intro h2 {
+        font-size: 26px;
+    }
+
+    #app .sms-page .sms-intro-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #app .sms-page .sms-total-card,
+    #app .sms-page .sms-refresh-button {
+        width: 100%;
+    }
+
+    #app .sms-page .sms-info-banner {
+        align-items: flex-start;
+    }
+
+    #app .sms-page .sms-summary-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+    }
+
+    #app .sms-page .sms-summary-card {
+        min-height: 124px;
+    }
+
+    #app .sms-page .sms-section-heading {
+        align-items: flex-start;
+        padding: 16px;
+    }
+
+    #app .sms-page .sms-filters {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 16px;
+    }
+
+    #app .sms-page .sms-search-field,
+    #app .sms-page .sms-filter-actions {
+        grid-column: 1;
+    }
+
+    #app .sms-page .sms-filter-actions button {
+        flex: 1;
+        min-width: 0;
+        padding: 0 9px;
+    }
+
+    #app .sms-page .sms-table-heading {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+        padding: 17px 16px;
+    }
+
+    #app .sms-page .sms-table-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    #app .sms-page .sms-pagination {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 16px;
+    }
+
+    #app .sms-page .sms-error {
+        flex-wrap: wrap;
+    }
+
+    #app .sms-page .sms-error .retry-button {
+        width: 100%;
+    }
+}

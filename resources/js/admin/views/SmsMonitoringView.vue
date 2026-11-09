@@ -1,12 +1,22 @@
-
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import {
+    computed,
+    reactive,
+    ref,
+} from 'vue';
+
 import { useRouter } from 'vue-router';
 import { apiRequest } from '../services/api';
 import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
 const auth = useAuthStore();
+
+/*
+|--------------------------------------------------------------------------
+| STATE
+|--------------------------------------------------------------------------
+*/
 
 const notifications = ref([]);
 const isLoading = ref(false);
@@ -44,6 +54,12 @@ const filters = reactive({
     per_page: 20,
 });
 
+/*
+|--------------------------------------------------------------------------
+| FILTER OPTIONS
+|--------------------------------------------------------------------------
+*/
+
 const statusOptions = [
     { value: 'pending', label: 'Pending' },
     { value: 'processing', label: 'Processing' },
@@ -53,20 +69,56 @@ const statusOptions = [
 ];
 
 const typeOptions = [
-    { value: 'booking_received', label: 'Booking Received' },
-    { value: 'appointment_confirmed', label: 'Appointment Confirmed' },
-    { value: 'appointment_declined', label: 'Appointment Declined' },
-    { value: 'appointment_cancelled', label: 'Appointment Cancelled' },
-    { value: 'reschedule_approved', label: 'Reschedule Approved' },
-    { value: 'reschedule_rejected', label: 'Reschedule Rejected' },
-    { value: 'appointment_reminder', label: 'Appointment Reminder' },
-    { value: 'system_test', label: 'System Test' },
+    {
+        value: 'booking_received',
+        label: 'Booking Received',
+    },
+    {
+        value: 'appointment_confirmed',
+        label: 'Appointment Confirmed',
+    },
+    {
+        value: 'appointment_declined',
+        label: 'Appointment Declined',
+    },
+    {
+        value: 'appointment_cancelled',
+        label: 'Appointment Cancelled',
+    },
+    {
+        value: 'reschedule_approved',
+        label: 'Reschedule Approved',
+    },
+    {
+        value: 'reschedule_rejected',
+        label: 'Reschedule Rejected',
+    },
+    {
+        value: 'appointment_reminder',
+        label: 'Appointment Reminder',
+    },
+    {
+        value: 'system_test',
+        label: 'System Test',
+    },
 ];
 
 const failureOptions = [
-    { value: 'definite', label: 'Definite Failure' },
-    { value: 'uncertain', label: 'Uncertain Delivery Outcome' },
+    {
+        value: 'definite',
+        label: 'Definite Failure',
+    },
+    {
+        value: 'uncertain',
+        label: 'Uncertain Delivery Outcome',
+    },
 ];
+
+/*
+|--------------------------------------------------------------------------
+| SUMMARY CARDS
+|--------------------------------------------------------------------------
+*/
 
 const overviewCards = [
     {
@@ -119,11 +171,13 @@ const overviewCards = [
     },
 ];
 
-const numberFormatter = new Intl.NumberFormat('en-PH');
+/*
+|--------------------------------------------------------------------------
+| FORMATTING HELPERS
+|--------------------------------------------------------------------------
+*/
 
-/* ==========================================================
-   FORMATTING
-   ========================================================== */
+const numberFormatter = new Intl.NumberFormat('en-PH');
 
 function formatNumber(value) {
     const number = Number(value ?? 0);
@@ -173,9 +227,11 @@ function formatDateTime(value) {
     }).format(date);
 }
 
-/* ==========================================================
-   SMS PROVIDER DISPLAY
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| SMS PROVIDER DISPLAY
+|--------------------------------------------------------------------------
+*/
 
 function providerLabel(value) {
     const original = String(value ?? '').trim();
@@ -204,9 +260,11 @@ function isLegacyProvider(value) {
     );
 }
 
-/* ==========================================================
-   ACTIVE FILTERS
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| ACTIVE FILTER COUNT
+|--------------------------------------------------------------------------
+*/
 
 const activeFiltersCount = computed(() =>
     [
@@ -222,9 +280,11 @@ const activeFiltersCount = computed(() =>
     ].filter(Boolean).length,
 );
 
-/* ==========================================================
-   PAGINATION
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| PAGINATION
+|--------------------------------------------------------------------------
+*/
 
 const firstResult = computed(() =>
     pagination.value.total === 0
@@ -261,9 +321,11 @@ const visiblePages = computed(() => {
     );
 });
 
-/* ==========================================================
-   FILTER VALIDATION
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| FILTER VALIDATION
+|--------------------------------------------------------------------------
+*/
 
 function validateFilters() {
     errorMessage.value = '';
@@ -282,9 +344,11 @@ function validateFilters() {
     return true;
 }
 
-/* ==========================================================
-   QUERY BUILDER
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| QUERY BUILDER
+|--------------------------------------------------------------------------
+*/
 
 function buildQuery(page) {
     const query = new URLSearchParams();
@@ -310,14 +374,20 @@ function buildQuery(page) {
     }
 
     query.set('page', String(page));
-    query.set('per_page', String(filters.per_page));
+
+    query.set(
+        'per_page',
+        String(filters.per_page),
+    );
 
     return query.toString();
 }
 
-/* ==========================================================
-   AUTHENTICATION
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| AUTHENTICATION
+|--------------------------------------------------------------------------
+*/
 
 async function authenticationFailure() {
     auth.clearSession();
@@ -327,9 +397,11 @@ async function authenticationFailure() {
     });
 }
 
-/* ==========================================================
-   LOAD SMS SUMMARY
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| LOAD SUMMARY
+|--------------------------------------------------------------------------
+*/
 
 async function loadSummary() {
     const response = await apiRequest(
@@ -349,9 +421,11 @@ async function loadSummary() {
     summary.value = next;
 }
 
-/* ==========================================================
-   LOAD SMS NOTIFICATIONS
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| LOAD SMS NOTIFICATIONS
+|--------------------------------------------------------------------------
+*/
 
 async function loadNotifications(page) {
     const response = await apiRequest(
@@ -370,21 +444,34 @@ async function loadNotifications(page) {
     const next = response?.data?.pagination ?? {};
 
     pagination.value = {
-        current_page: Number(next.current_page ?? 1),
+        current_page: Number(
+            next.current_page ?? 1,
+        ),
         per_page: Number(
             next.per_page ?? filters.per_page,
         ),
         total: Number(next.total ?? 0),
-        last_page: Number(next.last_page ?? 1),
+        last_page: Number(
+            next.last_page ?? 1,
+        ),
         has_more_pages: Boolean(
             next.has_more_pages,
         ),
     };
 }
 
-/* ==========================================================
-   LOAD PAGE
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| LOAD PAGE
+|--------------------------------------------------------------------------
+|
+| The initial request is awaited in script setup.
+| This works with Suspense in AdminLayout.vue.
+|
+| The page is displayed after the initial data request
+| has finished, avoiding a visible loading screen.
+|
+*/
 
 async function loadPage(page = 1) {
     if (!auth.token) {
@@ -422,9 +509,11 @@ async function loadPage(page = 1) {
     }
 }
 
-/* ==========================================================
-   FILTER ACTIONS
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| FILTER ACTIONS
+|--------------------------------------------------------------------------
+*/
 
 async function applyFilters() {
     await loadPage(1);
@@ -447,9 +536,11 @@ async function resetFilters() {
     await loadPage(1);
 }
 
-/* ==========================================================
-   PAGE NAVIGATION
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| PAGE NAVIGATION
+|--------------------------------------------------------------------------
+*/
 
 async function changePage(page) {
     if (
@@ -464,6 +555,12 @@ async function changePage(page) {
     await loadPage(page);
 }
 
+/*
+|--------------------------------------------------------------------------
+| VIEW NOTIFICATION
+|--------------------------------------------------------------------------
+*/
+
 async function openNotification(notification) {
     await router.push({
         name: 'admin.sms-notification.detail',
@@ -473,22 +570,31 @@ async function openNotification(notification) {
     });
 }
 
-onMounted(() => {
-    void loadPage();
-});
+/*
+|--------------------------------------------------------------------------
+| INITIAL DATA LOADING
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+| Do not use onMounted here.
+|
+| Top-level await allows the admin layout's Suspense
+| to wait until this page finishes loading.
+|
+*/
+
+await loadPage();
 </script>
 
 <template>
     <div class="sms-page">
 
-        <!-- =============================================
+        <!-- =====================================================
              PAGE HEADER
-             ============================================= -->
+             ===================================================== -->
 
         <section class="sms-intro">
             <div class="sms-intro-copy">
-                
-
                 <h2>SMS Monitoring</h2>
 
                 <p>
@@ -530,77 +636,24 @@ onMounted(() => {
                     type="button"
                     class="secondary-button sms-refresh-button"
                     :disabled="isLoading"
-                    @click="
-                        loadPage(pagination.current_page)
-                    "
+                    @click="loadPage(pagination.current_page)"
                 >
                     <svg
                         viewBox="0 0 24 24"
                         aria-hidden="true"
-                        :class="{
-                            spinning: isLoading,
-                        }"
                     >
-                        <path
-                            d="M20 11a8 8 0 10-2.3 5.7"
-                        />
-
+                        <path d="M20 11a8 8 0 10-2.3 5.7" />
                         <path d="M20 5v6h-6" />
                     </svg>
 
-                    {{
-                        isLoading
-                            ? 'Refreshing...'
-                            : 'Refresh'
-                    }}
+                    Refresh
                 </button>
             </div>
         </section>
 
-        <!-- =============================================
-             TEXTBEE INFORMATION
-             ============================================= -->
-
-        <section class="sms-info-banner">
-            <div class="sms-info-icon">
-                <svg
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                >
-                    <circle
-                        cx="12"
-                        cy="12"
-                        r="9"
-                    />
-
-                    <path d="M12 11v5M12 8h.01" />
-                </svg>
-            </div>
-
-            <div>
-                <strong>
-                    TextBee SMS monitoring
-                </strong>
-
-                <p>
-                    New SMS records are labeled TextBee.
-                    Older records can still show
-                    <b>Semaphore (legacy label)</b>;
-                    check their actual sending history
-                    before interpreting them.
-
-                    "Accepted by Provider" is not proof
-                    of handset delivery.
-
-                    Retry only definite failures
-                    marked safe to retry.
-                </p>
-            </div>
-        </section>
-
-        <!-- =============================================
+        <!-- =====================================================
              SUMMARY CARDS
-             ============================================= -->
+             ===================================================== -->
 
         <section
             class="sms-summary-grid"
@@ -629,11 +682,7 @@ onMounted(() => {
                     </span>
 
                     <strong>
-                        {{
-                            formatNumber(
-                                summary[card.key]
-                            )
-                        }}
+                        {{ formatNumber(summary[card.key]) }}
                     </strong>
 
                     <small>
@@ -643,9 +692,9 @@ onMounted(() => {
             </article>
         </section>
 
-        <!-- =============================================
+        <!-- =====================================================
              FILTERS
-             ============================================= -->
+             ===================================================== -->
 
         <section class="filter-card sms-filter-card">
             <div class="sms-section-heading">
@@ -655,9 +704,7 @@ onMounted(() => {
                             viewBox="0 0 24 24"
                             aria-hidden="true"
                         >
-                            <path
-                                d="M4 6h16M7 12h10M10 18h4"
-                            />
+                            <path d="M4 6h16M7 12h10M10 18h4" />
                         </svg>
                     </div>
 
@@ -684,6 +731,7 @@ onMounted(() => {
                 class="sms-filters"
                 @submit.prevent="applyFilters"
             >
+
                 <!-- SEARCH -->
 
                 <div class="search-field sms-search-field">
@@ -894,9 +942,9 @@ onMounted(() => {
             </form>
         </section>
 
-        <!-- =============================================
+        <!-- =====================================================
              ERROR STATE
-             ============================================= -->
+             ===================================================== -->
 
         <div
             v-if="errorMessage"
@@ -917,17 +965,15 @@ onMounted(() => {
                 type="button"
                 class="retry-button"
                 :disabled="isLoading"
-                @click="
-                    loadPage(pagination.current_page)
-                "
+                @click="loadPage(pagination.current_page)"
             >
                 Try again
             </button>
         </div>
 
-        <!-- =============================================
+        <!-- =====================================================
              SMS RECORDS
-             ============================================= -->
+             ===================================================== -->
 
         <section class="sms-card">
             <div class="sms-table-heading">
@@ -945,9 +991,7 @@ onMounted(() => {
                                 rx="3"
                             />
 
-                            <path
-                                d="M8 7h8M8 11h8M8 15h5"
-                            />
+                            <path d="M8 7h8M8 11h8M8 15h5" />
                         </svg>
                     </div>
 
@@ -957,11 +1001,7 @@ onMounted(() => {
                         </h3>
 
                         <p>
-                            {{
-                                formatNumber(
-                                    pagination.total
-                                )
-                            }}
+                            {{ formatNumber(pagination.total) }}
                             record{{
                                 pagination.total === 1
                                     ? ''
@@ -990,51 +1030,20 @@ onMounted(() => {
                             :disabled="isLoading"
                             @change="loadPage(1)"
                         >
-                            <option :value="10">
-                                10
-                            </option>
-
-                            <option :value="20">
-                                20
-                            </option>
-
-                            <option :value="50">
-                                50
-                            </option>
+                            <option :value="10">10</option>
+                            <option :value="20">20</option>
+                            <option :value="50">50</option>
                         </select>
                     </div>
                 </div>
             </div>
 
-            <!-- =========================================
-                 LOADING
-                 ========================================= -->
-
-            <div
-                v-if="
-                    isLoading &&
-                    notifications.length === 0
-                "
-                class="sms-empty"
-            >
-                <div class="sms-spinner"></div>
-
-                <strong>
-                    Loading SMS records...
-                </strong>
-
-                <p>
-                    Please wait while StyleHub retrieves
-                    the latest records.
-                </p>
-            </div>
-
-            <!-- =========================================
+            <!-- =================================================
                  EMPTY STATE
-                 ========================================= -->
+                 ================================================= -->
 
             <div
-                v-else-if="notifications.length === 0"
+                v-if="notifications.length === 0"
                 class="sms-empty"
             >
                 <div class="sms-empty-icon">
@@ -1050,9 +1059,7 @@ onMounted(() => {
                             rx="3"
                         />
 
-                        <path
-                            d="M8 7h8M8 11h8M8 15h5"
-                        />
+                        <path d="M8 7h8M8 11h8M8 15h5" />
                     </svg>
                 </div>
 
@@ -1076,16 +1083,13 @@ onMounted(() => {
                 </button>
             </div>
 
-            <!-- =========================================
+            <!-- =================================================
                  SMS TABLE
-                 ========================================= -->
+                 ================================================= -->
 
             <div
                 v-else
                 class="table-wrapper sms-table-wrapper"
-                :class="{
-                    'sms-refreshing': isLoading,
-                }"
             >
                 <table>
                     <thead>
@@ -1107,6 +1111,7 @@ onMounted(() => {
                             v-for="notification in notifications"
                             :key="notification.id"
                         >
+
                             <!-- NOTIFICATION -->
 
                             <td>
@@ -1120,7 +1125,9 @@ onMounted(() => {
                                                 d="M4 5h16v12H9l-5 4V5z"
                                             />
 
-                                            <path d="M8 9h8M8 13h5" />
+                                            <path
+                                                d="M8 9h8M8 13h5"
+                                            />
                                         </svg>
                                     </span>
 
@@ -1337,9 +1344,9 @@ onMounted(() => {
                 </table>
             </div>
 
-            <!-- =========================================
+            <!-- =================================================
                  PAGINATION
-                 ========================================= -->
+                 ================================================= -->
 
             <div
                 v-if="pagination.total > 0"
@@ -1347,13 +1354,23 @@ onMounted(() => {
             >
                 <div class="sms-pagination-summary">
                     Showing
-                    <strong>{{ firstResult }}</strong>
+
+                    <strong>
+                        {{ firstResult }}
+                    </strong>
+
                     –
-                    <strong>{{ lastResult }}</strong>
+
+                    <strong>
+                        {{ lastResult }}
+                    </strong>
+
                     of
+
                     <strong>
                         {{ formatNumber(pagination.total) }}
                     </strong>
+
                     SMS records
                 </div>
 
@@ -1414,9 +1431,11 @@ onMounted(() => {
 <style scoped src="./admin-page.css"></style>
 
 <style scoped>
-/* ==========================================================
-   PAGE LAYOUT
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| PAGE LAYOUT
+|--------------------------------------------------------------------------
+*/
 
 .sms-page {
     display: flex;
@@ -1424,9 +1443,11 @@ onMounted(() => {
     gap: 14px;
 }
 
-/* ==========================================================
-   PAGE HEADER
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| PAGE HEADER
+|--------------------------------------------------------------------------
+*/
 
 .sms-intro {
     min-height: 126px;
@@ -1440,7 +1461,7 @@ onMounted(() => {
     background:
         radial-gradient(
             circle at 94% 10%,
-            rgba(214,154,45,.07),
+            rgba(214, 154, 45, .07),
             transparent 26%
         ),
         var(--sh-surface);
@@ -1469,7 +1490,7 @@ onMounted(() => {
     height: 6px;
     border-radius: 50%;
     background: var(--sh-accent);
-    box-shadow: 0 0 0 4px rgba(214,154,45,.08);
+    box-shadow: 0 0 0 4px rgba(214, 154, 45, .08);
 }
 
 .sms-intro h2 {
@@ -1496,9 +1517,11 @@ onMounted(() => {
     gap: 10px;
 }
 
-/* ==========================================================
-   TOTAL RECORD COUNT
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| TOTAL RECORD COUNT
+|--------------------------------------------------------------------------
+*/
 
 .sms-total-card {
     min-width: 162px;
@@ -1563,9 +1586,11 @@ onMounted(() => {
     height: 16px;
 }
 
-/* ==========================================================
-   TEXTBEE INFORMATION
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| TEXTBEE INFORMATION
+|--------------------------------------------------------------------------
+*/
 
 .sms-info-banner {
     display: flex;
@@ -1615,9 +1640,11 @@ onMounted(() => {
     line-height: 16px;
 }
 
-/* ==========================================================
-   SMS STATISTICS
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| SMS STATISTICS
+|--------------------------------------------------------------------------
+*/
 
 .sms-summary-grid {
     display: grid;
@@ -1715,9 +1742,11 @@ onMounted(() => {
     line-height: 13px;
 }
 
-/* ==========================================================
-   FILTER CARD
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| FILTER CARD
+|--------------------------------------------------------------------------
+*/
 
 .sms-filter-card {
     padding: 18px;
@@ -1797,9 +1826,11 @@ onMounted(() => {
     min-height: 42px;
 }
 
-/* ==========================================================
-   ERROR HANDLING
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| ERROR HANDLING
+|--------------------------------------------------------------------------
+*/
 
 .sms-error {
     display: flex;
@@ -1820,9 +1851,11 @@ onMounted(() => {
     margin: 3px 0 0;
 }
 
-/* ==========================================================
-   TABLE CARD
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| TABLE CARD
+|--------------------------------------------------------------------------
+*/
 
 .sms-card {
     overflow: hidden;
@@ -1857,9 +1890,11 @@ onMounted(() => {
     min-width: 72px;
 }
 
-/* ==========================================================
-   TABLE CONTENT
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| TABLE CONTENT
+|--------------------------------------------------------------------------
+*/
 
 .sms-table-wrapper {
     overflow-x: auto;
@@ -1880,13 +1915,11 @@ onMounted(() => {
     background: #fafbfc;
 }
 
-.sms-refreshing {
-    opacity: .65;
-}
-
-/* ==========================================================
-   TABLE CELLS
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| TABLE CELLS
+|--------------------------------------------------------------------------
+*/
 
 .sms-cell-with-icon {
     display: flex;
@@ -1951,9 +1984,11 @@ onMounted(() => {
     font-weight: 700;
 }
 
-/* ==========================================================
-   STATUS AND FAILURE
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| STATUS AND FAILURE
+|--------------------------------------------------------------------------
+*/
 
 .sms-status {
     display: inline-flex;
@@ -2019,9 +2054,11 @@ onMounted(() => {
     stroke-linejoin: round;
 }
 
-/* ==========================================================
-   LOADING AND EMPTY STATES
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| EMPTY STATE
+|--------------------------------------------------------------------------
+*/
 
 .sms-empty {
     min-height: 220px;
@@ -2065,28 +2102,11 @@ onMounted(() => {
     stroke-linejoin: round;
 }
 
-.sms-spinner {
-    width: 28px;
-    height: 28px;
-    border: 3px solid var(--sh-border);
-    border-top-color: var(--sh-accent);
-    border-radius: 50%;
-    animation: sms-rotate .8s linear infinite;
-}
-
-@keyframes sms-rotate {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.spinning {
-    animation: sms-rotate .8s linear infinite;
-}
-
-/* ==========================================================
-   PAGINATION
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| PAGINATION
+|--------------------------------------------------------------------------
+*/
 
 .sms-pagination {
     display: flex;
@@ -2106,9 +2126,11 @@ onMounted(() => {
     color: var(--sh-text);
 }
 
-/* ==========================================================
-   RESPONSIVE LAYOUT
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| RESPONSIVE LAYOUT
+|--------------------------------------------------------------------------
+*/
 
 @media (max-width: 1100px) {
     .sms-summary-grid {

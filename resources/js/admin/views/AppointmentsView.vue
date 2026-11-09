@@ -1,7 +1,6 @@
 <script setup>
 import {
     computed,
-    onMounted,
     reactive,
     ref,
 } from 'vue';
@@ -15,7 +14,6 @@ const router = useRouter();
 const auth = useAuthStore();
 
 const appointments = ref([]);
-
 const isLoading = ref(false);
 const errorMessage = ref('');
 
@@ -38,57 +36,25 @@ const filters = reactive({
 });
 
 const statusOptions = [
-    {
-        value: 'pending',
-        label: 'Pending',
-    },
-    {
-        value: 'confirmed',
-        label: 'Confirmed',
-    },
-    {
-        value: 'completed',
-        label: 'Completed',
-    },
-    {
-        value: 'cancelled',
-        label: 'Cancelled',
-    },
-    {
-        value: 'declined',
-        label: 'Declined',
-    },
+    { value: 'pending', label: 'Pending' },
+    { value: 'confirmed', label: 'Confirmed' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'cancelled', label: 'Cancelled' },
+    { value: 'declined', label: 'Declined' },
 ];
 
-const numberFormatter =
-    new Intl.NumberFormat(
-        'en-PH',
-    );
+const numberFormatter = new Intl.NumberFormat('en-PH');
 
-
-/*
-|--------------------------------------------------------------------------
-| FORMATTERS
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// FORMATTERS
+// ============================================================
 
 function formatNumber(value) {
-    const number =
-        Number(
-            value ?? 0,
-        );
+    const number = Number(value ?? 0);
 
-    if (
-        !Number.isFinite(
-            number,
-        )
-    ) {
-        return '0';
-    }
-
-    return numberFormatter.format(
-        number,
-    );
+    return Number.isFinite(number)
+        ? numberFormatter.format(number)
+        : '0';
 }
 
 function humanize(value) {
@@ -97,14 +63,10 @@ function humanize(value) {
     }
 
     return String(value)
-        .replaceAll(
-            '_',
-            ' ',
-        )
+        .replaceAll('_', ' ')
         .replace(
             /\b\w/g,
-            (character) =>
-                character.toUpperCase(),
+            (character) => character.toUpperCase(),
         );
 }
 
@@ -113,28 +75,18 @@ function formatDate(value) {
         return '—';
     }
 
-    const date =
-        new Date(
-            `${value}T00:00:00`,
-        );
+    const date = new Date(`${value}T00:00:00`);
 
-    if (
-        Number.isNaN(
-            date.getTime(),
-        )
-    ) {
+    if (Number.isNaN(date.getTime())) {
         return value;
     }
 
-    return new Intl.DateTimeFormat(
-        'en-PH',
-        {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            timeZone: 'Asia/Manila',
-        },
-    ).format(date);
+    return new Intl.DateTimeFormat('en-PH', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'Asia/Manila',
+    }).format(date);
 }
 
 function formatTime(value) {
@@ -142,73 +94,46 @@ function formatTime(value) {
         return '—';
     }
 
-    const parts =
-        String(value)
-            .split(':');
+    const parts = String(value).split(':');
 
-    if (
-        parts.length < 2
-    ) {
+    if (parts.length < 2) {
         return value;
     }
 
-    const hours =
-        Number(
-            parts[0],
-        );
-
-    const minutes =
-        Number(
-            parts[1],
-        );
+    const hours = Number(parts[0]);
+    const minutes = Number(parts[1]);
 
     if (
-        !Number.isInteger(hours)
-        ||
+        !Number.isInteger(hours) ||
         !Number.isInteger(minutes)
     ) {
         return value;
     }
 
-    const date =
-        new Date(
-            2000,
-            0,
-            1,
-            hours,
-            minutes,
-        );
+    const date = new Date(
+        2000,
+        0,
+        1,
+        hours,
+        minutes,
+    );
 
-    return new Intl.DateTimeFormat(
-        'en-PH',
-        {
-            hour: 'numeric',
-            minute: '2-digit',
-        },
-    ).format(date);
+    return new Intl.DateTimeFormat('en-PH', {
+        hour: 'numeric',
+        minute: '2-digit',
+    }).format(date);
 }
 
 function statusClass(value) {
-    return String(
-        value ?? '',
-    )
+    return String(value ?? '')
         .toLowerCase()
-        .replaceAll(
-            '_',
-            '-',
-        );
+        .replaceAll('_', '-');
 }
 
 function customerInitial(appointment) {
     const name =
-        appointment
-            ?.customer
-            ?.full_name
-        ||
-        appointment
-            ?.customer
-            ?.email
-        ||
+        appointment?.customer?.full_name ||
+        appointment?.customer?.email ||
         'C';
 
     return String(name)
@@ -216,271 +141,147 @@ function customerInitial(appointment) {
         .toUpperCase();
 }
 
+// ============================================================
+// ACTIVE FILTER COUNT
+// ============================================================
 
-/*
-|--------------------------------------------------------------------------
-| FILTER COUNT
-|--------------------------------------------------------------------------
-*/
+const activeFiltersCount = computed(() => {
+    let count = 0;
 
-const activeFiltersCount =
-    computed(() => {
-        let count = 0;
+    if (filters.search.trim()) count++;
+    if (filters.status) count++;
+    if (filters.shop_id) count++;
+    if (filters.customer_id) count++;
+    if (filters.date_from) count++;
+    if (filters.date_to) count++;
 
-        if (
-            filters.search
-                .trim()
-        ) {
-            count += 1;
-        }
+    return count;
+});
 
-        if (
-            filters.status
-        ) {
-            count += 1;
-        }
+// ============================================================
+// CURRENT PAGE SUMMARY
+// ============================================================
 
-        if (
-            filters.shop_id
-        ) {
-            count += 1;
-        }
+const currentPageSummary = computed(() => {
+    const summary = {
+        pending: 0,
+        confirmed: 0,
+        completed: 0,
+        cancelled: 0,
+        declined: 0,
+    };
 
-        if (
-            filters.customer_id
-        ) {
-            count += 1;
-        }
+    for (const appointment of appointments.value) {
+        const status = appointment.status;
 
         if (
-            filters.date_from
-        ) {
-            count += 1;
-        }
-
-        if (
-            filters.date_to
-        ) {
-            count += 1;
-        }
-
-        return count;
-    });
-
-
-/*
-|--------------------------------------------------------------------------
-| CURRENT PAGE STATUS SUMMARY
-|--------------------------------------------------------------------------
-|
-| The appointments endpoint is paginated, so these cards describe only
-| the records currently loaded on this page.
-|
-*/
-
-const currentPageSummary =
-    computed(() => {
-        const summary = {
-            pending: 0,
-            confirmed: 0,
-            completed: 0,
-            cancelled: 0,
-            declined: 0,
-        };
-
-        for (
-            const appointment
-            of appointments.value
-        ) {
-            const status =
-                appointment.status;
-
-            if (
-                Object.prototype
-                    .hasOwnProperty
-                    .call(
-                        summary,
-                        status,
-                    )
-            ) {
-                summary[status] += 1;
-            }
-        }
-
-        return summary;
-    });
-
-
-/*
-|--------------------------------------------------------------------------
-| PAGINATION
-|--------------------------------------------------------------------------
-*/
-
-const firstResult =
-    computed(() => {
-        if (
-            pagination.value.total
-            === 0
-        ) {
-            return 0;
-        }
-
-        return (
-            (
-                pagination.value
-                    .current_page
-                - 1
+            Object.prototype.hasOwnProperty.call(
+                summary,
+                status,
             )
-            *
-            pagination.value
-                .per_page
-        )
-        + 1;
-    });
-
-const lastResult =
-    computed(() =>
-        Math.min(
-            pagination.value.total,
-
-            pagination.value
-                .current_page
-            *
-            pagination.value
-                .per_page,
-        )
-    );
-
-const visiblePages =
-    computed(() => {
-        const current =
-            pagination.value
-                .current_page;
-
-        const last =
-            pagination.value
-                .last_page;
-
-        const start =
-            Math.max(
-                1,
-                current - 2,
-            );
-
-        const end =
-            Math.min(
-                last,
-                current + 2,
-            );
-
-        const pages = [];
-
-        for (
-            let page = start;
-            page <= end;
-            page += 1
         ) {
-            pages.push(
-                page,
-            );
+            summary[status]++;
         }
+    }
 
-        return pages;
-    });
+    return summary;
+});
 
+// ============================================================
+// PAGINATION
+// ============================================================
 
-/*
-|--------------------------------------------------------------------------
-| QUERY
-|--------------------------------------------------------------------------
-*/
+const firstResult = computed(() => {
+    if (pagination.value.total === 0) {
+        return 0;
+    }
+
+    return (
+        (pagination.value.current_page - 1) *
+        pagination.value.per_page
+    ) + 1;
+});
+
+const lastResult = computed(() => {
+    return Math.min(
+        pagination.value.total,
+        pagination.value.current_page *
+            pagination.value.per_page,
+    );
+});
+
+const visiblePages = computed(() => {
+    const current = pagination.value.current_page;
+    const last = pagination.value.last_page;
+
+    const start = Math.max(1, current - 2);
+    const end = Math.min(last, current + 2);
+
+    const pages = [];
+
+    for (let page = start; page <= end; page++) {
+        pages.push(page);
+    }
+
+    return pages;
+});
+
+// ============================================================
+// BUILD API QUERY
+// ============================================================
 
 function buildQuery(page) {
-    const query =
-        new URLSearchParams();
-
-    const search =
-        filters.search
-            .trim();
+    const query = new URLSearchParams();
+    const search = filters.search.trim();
 
     if (search) {
-        query.set(
-            'search',
-            search,
-        );
+        query.set('search', search);
     }
 
-    if (
-        filters.status
-    ) {
-        query.set(
-            'status',
-            filters.status,
-        );
+    if (filters.status) {
+        query.set('status', filters.status);
     }
 
-    if (
-        filters.shop_id
-    ) {
+    if (filters.shop_id) {
         query.set(
             'shop_id',
-            String(
-                filters.shop_id,
-            ),
+            String(filters.shop_id),
         );
     }
 
-    if (
-        filters.customer_id
-    ) {
+    if (filters.customer_id) {
         query.set(
             'customer_id',
-            String(
-                filters.customer_id,
-            ),
+            String(filters.customer_id),
         );
     }
 
-    if (
-        filters.date_from
-    ) {
+    if (filters.date_from) {
         query.set(
             'date_from',
             filters.date_from,
         );
     }
 
-    if (
-        filters.date_to
-    ) {
+    if (filters.date_to) {
         query.set(
             'date_to',
             filters.date_to,
         );
     }
 
-    query.set(
-        'page',
-        String(page),
-    );
-
+    query.set('page', String(page));
     query.set(
         'per_page',
-        String(
-            filters.per_page,
-        ),
+        String(filters.per_page),
     );
 
     return query.toString();
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| AUTHENTICATION
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// AUTHENTICATION
+// ============================================================
 
 async function authenticationFailure() {
     auth.clearSession();
@@ -490,21 +291,13 @@ async function authenticationFailure() {
     });
 }
 
+// ============================================================
+// LOAD APPOINTMENTS
+// ============================================================
 
-/*
-|--------------------------------------------------------------------------
-| LOAD APPOINTMENTS
-|--------------------------------------------------------------------------
-*/
-
-async function loadAppointments(
-    page = 1,
-) {
-    if (
-        !auth.token
-    ) {
+async function loadAppointments(page = 1) {
+    if (!auth.token) {
         await authenticationFailure();
-
         return;
     }
 
@@ -512,118 +305,73 @@ async function loadAppointments(
     errorMessage.value = '';
 
     try {
-        const response =
-            await apiRequest(
-                `/admin/appointments?${buildQuery(page)}`,
-                {
-                    token:
-                        auth.token,
-                },
-            );
+        const response = await apiRequest(
+            `/admin/appointments?${buildQuery(page)}`,
+            {
+                token: auth.token,
+            },
+        );
 
-        appointments.value =
-            Array.isArray(
-                response
-                    ?.data
-                    ?.appointments,
-            )
-                ? response
-                    .data
-                    .appointments
-                : [];
+        appointments.value = Array.isArray(
+            response?.data?.appointments,
+        )
+            ? response.data.appointments
+            : [];
+
+        const apiPagination =
+            response?.data?.pagination;
 
         pagination.value = {
-            current_page:
-                Number(
-                    response
-                        ?.data
-                        ?.pagination
-                        ?.current_page
-                    ?? 1,
-                ),
+            current_page: Number(
+                apiPagination?.current_page ?? 1,
+            ),
 
-            per_page:
-                Number(
-                    response
-                        ?.data
-                        ?.pagination
-                        ?.per_page
-                    ?? filters.per_page,
-                ),
+            per_page: Number(
+                apiPagination?.per_page ??
+                    filters.per_page,
+            ),
 
-            total:
-                Number(
-                    response
-                        ?.data
-                        ?.pagination
-                        ?.total
-                    ?? 0,
-                ),
+            total: Number(
+                apiPagination?.total ?? 0,
+            ),
 
-            last_page:
-                Number(
-                    response
-                        ?.data
-                        ?.pagination
-                        ?.last_page
-                    ?? 1,
-                ),
+            last_page: Number(
+                apiPagination?.last_page ?? 1,
+            ),
 
-            has_more_pages:
-                Boolean(
-                    response
-                        ?.data
-                        ?.pagination
-                        ?.has_more_pages,
-                ),
+            has_more_pages: Boolean(
+                apiPagination?.has_more_pages,
+            ),
         };
-    } catch (
-        error
-    ) {
+    } catch (error) {
         if (
-            error?.status === 401
-            ||
+            error?.status === 401 ||
             error?.status === 403
         ) {
             await authenticationFailure();
-
             return;
         }
 
         errorMessage.value =
-            error
-                ?.data
-                ?.message
-            ??
-            error
-                ?.message
-            ??
+            error?.data?.message ??
+            error?.message ??
             'Unable to load appointments.';
     } finally {
-        isLoading.value =
-            false;
+        isLoading.value = false;
     }
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| FILTER ACTIONS
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// FILTER ACTIONS
+// ============================================================
 
 async function applyFilters() {
-    errorMessage.value =
-        '';
+    errorMessage.value = '';
 
     if (
-        filters.date_from
-        &&
-        filters.date_to
-        &&
-        filters.date_to
-            <
-            filters.date_from
+        filters.date_from &&
+        filters.date_to &&
+        filters.date_to < filters.date_from
     ) {
         errorMessage.value =
             'The end date must be on or after the start date.';
@@ -631,9 +379,7 @@ async function applyFilters() {
         return;
     }
 
-    await loadAppointments(
-        1,
-    );
+    await loadAppointments(1);
 }
 
 async function resetFilters() {
@@ -645,86 +391,62 @@ async function resetFilters() {
     filters.date_to = '';
     filters.per_page = 20;
 
-    await loadAppointments(
-        1,
-    );
+    await loadAppointments(1);
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| PAGINATION
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// CHANGE PAGE
+// ============================================================
 
 async function changePage(page) {
     if (
-        page < 1
-        ||
-        page
-            >
-            pagination.value
-                .last_page
-        ||
-        page
-            ===
-            pagination.value
-                .current_page
-        ||
+        page < 1 ||
+        page > pagination.value.last_page ||
+        page === pagination.value.current_page ||
         isLoading.value
     ) {
         return;
     }
 
-    await loadAppointments(
-        page,
-    );
+    await loadAppointments(page);
 }
 
+// ============================================================
+// OPEN APPOINTMENT DETAILS
+// ============================================================
 
-/*
-|--------------------------------------------------------------------------
-| NAVIGATION
-|--------------------------------------------------------------------------
-*/
-
-async function openAppointment(
-    appointment,
-) {
+async function openAppointment(appointment) {
     await router.push({
-        name:
-            'admin.appointment.detail',
+        name: 'admin.appointment.detail',
 
         params: {
-            appointmentId:
-                appointment.id,
+            appointmentId: appointment.id,
         },
     });
 }
 
+// ============================================================
+// INITIAL LOAD
+//
+// Important:
+// Fetch the appointment records before the page is displayed.
+//
+// AdminLayout.vue uses Suspense to keep the previous page
+// visible until this initial request is complete.
+// ============================================================
 
-/*
-|--------------------------------------------------------------------------
-| INITIAL LOAD
-|--------------------------------------------------------------------------
-*/
-
-onMounted(() => {
-    loadAppointments();
-});
+await loadAppointments();
 </script>
-
 
 <template>
     <div class="appointments-page">
-        <!-- ============================================================
+
+        <!-- ==================================================
              INTRODUCTION
-             ============================================================ -->
+             ================================================== -->
 
         <section class="appointments-intro">
             <div class="appointments-intro-copy">
-                
-
                 <h2>
                     Appointment monitoring
                 </h2>
@@ -735,7 +457,6 @@ onMounted(() => {
                     inspect complete appointment records.
                 </p>
             </div>
-
 
             <div class="appointments-intro-actions">
                 <div class="appointments-total-card">
@@ -768,15 +489,10 @@ onMounted(() => {
                         </span>
 
                         <strong>
-                            {{
-                                formatNumber(
-                                    pagination.total
-                                )
-                            }}
+                            {{ formatNumber(pagination.total) }}
                         </strong>
                     </div>
                 </div>
-
 
                 <button
                     type="button"
@@ -791,10 +507,6 @@ onMounted(() => {
                     <svg
                         viewBox="0 0 24 24"
                         aria-hidden="true"
-                        :class="{
-                            spinning:
-                                isLoading,
-                        }"
                     >
                         <path
                             d="M20 11a8 8 0 10-2.3 5.7"
@@ -805,69 +517,20 @@ onMounted(() => {
                         />
                     </svg>
 
-                    <span>
-                        {{
-                            isLoading
-                                ? 'Refreshing'
-                                : 'Refresh'
-                        }}
-                    </span>
+                    <span>Refresh</span>
                 </button>
             </div>
         </section>
 
-
-        <!-- ============================================================
-             READ-ONLY NOTICE
-             ============================================================ -->
-
-        <section class="monitoring-banner">
-            <div class="monitoring-icon">
-                <svg
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                >
-                    <path
-                        d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"
-                    />
-
-                    <circle
-                        cx="12"
-                        cy="12"
-                        r="2.5"
-                    />
-                </svg>
-            </div>
-
-            <div class="monitoring-copy">
-                <strong>
-                    Administrator monitoring mode
-                </strong>
-
-                <p>
-                    Appointment management is read-only from the
-                    administrator portal. Booking status changes
-                    remain controlled by the Customer and Shop
-                    Owner booking workflow.
-                </p>
-            </div>
-
-            <span class="monitoring-badge">
-                Read only
-            </span>
-        </section>
-
-
-        <!-- ============================================================
+        <!-- ==================================================
              CURRENT PAGE SUMMARY
-             ============================================================ -->
+             ================================================== -->
 
         <section
-            v-if="
-                appointments.length > 0
-            "
+            v-if="appointments.length > 0"
             class="appointment-summary-grid"
         >
+
             <!-- PENDING -->
 
             <article class="appointment-summary-card">
@@ -882,16 +545,12 @@ onMounted(() => {
                             r="9"
                         />
 
-                        <path
-                            d="M12 7v5l3 2"
-                        />
+                        <path d="M12 7v5l3 2" />
                     </svg>
                 </div>
 
                 <div class="summary-status-copy">
-                    <span>
-                        Pending
-                    </span>
+                    <span>Pending</span>
 
                     <strong>
                         {{
@@ -901,12 +560,9 @@ onMounted(() => {
                         }}
                     </strong>
 
-                    <small>
-                        On this page
-                    </small>
+                    <small>On this page</small>
                 </div>
             </article>
-
 
             <!-- CONFIRMED -->
 
@@ -922,16 +578,12 @@ onMounted(() => {
                             r="9"
                         />
 
-                        <path
-                            d="M8 12l3 3 5-6"
-                        />
+                        <path d="M8 12l3 3 5-6" />
                     </svg>
                 </div>
 
                 <div class="summary-status-copy">
-                    <span>
-                        Confirmed
-                    </span>
+                    <span>Confirmed</span>
 
                     <strong>
                         {{
@@ -941,12 +593,9 @@ onMounted(() => {
                         }}
                     </strong>
 
-                    <small>
-                        On this page
-                    </small>
+                    <small>On this page</small>
                 </div>
             </article>
-
 
             <!-- COMPLETED -->
 
@@ -956,16 +605,12 @@ onMounted(() => {
                         viewBox="0 0 24 24"
                         aria-hidden="true"
                     >
-                        <path
-                            d="M5 12l4 4L19 6"
-                        />
+                        <path d="M5 12l4 4L19 6" />
                     </svg>
                 </div>
 
                 <div class="summary-status-copy">
-                    <span>
-                        Completed
-                    </span>
+                    <span>Completed</span>
 
                     <strong>
                         {{
@@ -975,12 +620,9 @@ onMounted(() => {
                         }}
                     </strong>
 
-                    <small>
-                        On this page
-                    </small>
+                    <small>On this page</small>
                 </div>
             </article>
-
 
             <!-- CANCELLED -->
 
@@ -996,16 +638,12 @@ onMounted(() => {
                             r="9"
                         />
 
-                        <path
-                            d="M9 9l6 6M15 9l-6 6"
-                        />
+                        <path d="M9 9l6 6M15 9l-6 6" />
                     </svg>
                 </div>
 
                 <div class="summary-status-copy">
-                    <span>
-                        Cancelled
-                    </span>
+                    <span>Cancelled</span>
 
                     <strong>
                         {{
@@ -1015,12 +653,9 @@ onMounted(() => {
                         }}
                     </strong>
 
-                    <small>
-                        On this page
-                    </small>
+                    <small>On this page</small>
                 </div>
             </article>
-
 
             <!-- DECLINED -->
 
@@ -1036,16 +671,12 @@ onMounted(() => {
                             r="9"
                         />
 
-                        <path
-                            d="M8 12h8"
-                        />
+                        <path d="M8 12h8" />
                     </svg>
                 </div>
 
                 <div class="summary-status-copy">
-                    <span>
-                        Declined
-                    </span>
+                    <span>Declined</span>
 
                     <strong>
                         {{
@@ -1055,17 +686,14 @@ onMounted(() => {
                         }}
                     </strong>
 
-                    <small>
-                        On this page
-                    </small>
+                    <small>On this page</small>
                 </div>
             </article>
         </section>
 
-
-        <!-- ============================================================
+        <!-- ==================================================
              FILTER PANEL
-             ============================================================ -->
+             ================================================== -->
 
         <section class="filter-card appointments-filter-card">
             <div class="filter-card-heading">
@@ -1075,9 +703,7 @@ onMounted(() => {
                             viewBox="0 0 24 24"
                             aria-hidden="true"
                         >
-                            <path
-                                d="M4 6h16M7 12h10M10 18h4"
-                            />
+                            <path d="M4 6h16M7 12h10M10 18h4" />
                         </svg>
                     </div>
 
@@ -1093,27 +719,19 @@ onMounted(() => {
                     </div>
                 </div>
 
-
                 <span
-                    v-if="
-                        activeFiltersCount > 0
-                    "
+                    v-if="activeFiltersCount > 0"
                     class="active-filter-count"
                 >
-                    {{
-                        activeFiltersCount
-                    }}
-                    active
+                    {{ activeFiltersCount }} active
                 </span>
             </div>
 
-
             <form
                 class="appointments-filters"
-                @submit.prevent="
-                    applyFilters
-                "
+                @submit.prevent="applyFilters"
             >
+
                 <!-- SEARCH -->
 
                 <div class="search-field appointment-search">
@@ -1132,23 +750,18 @@ onMounted(() => {
                                 r="7"
                             />
 
-                            <path
-                                d="M20 20l-4-4"
-                            />
+                            <path d="M20 20l-4-4" />
                         </svg>
 
                         <input
                             id="appointment-search"
-                            v-model="
-                                filters.search
-                            "
+                            v-model="filters.search"
                             type="search"
                             maxlength="100"
                             placeholder="Customer, shop or service"
                         >
                     </div>
                 </div>
-
 
                 <!-- STATUS -->
 
@@ -1159,31 +772,21 @@ onMounted(() => {
 
                     <select
                         id="appointment-status"
-                        v-model="
-                            filters.status
-                        "
+                        v-model="filters.status"
                     >
                         <option value="">
                             All statuses
                         </option>
 
                         <option
-                            v-for="
-                                option
-                                in statusOptions
-                            "
-                            :key="
-                                option.value
-                            "
-                            :value="
-                                option.value
-                            "
+                            v-for="option in statusOptions"
+                            :key="option.value"
+                            :value="option.value"
                         >
                             {{ option.label }}
                         </option>
                     </select>
                 </div>
-
 
                 <!-- SHOP ID -->
 
@@ -1194,16 +797,13 @@ onMounted(() => {
 
                     <input
                         id="shop-id"
-                        v-model="
-                            filters.shop_id
-                        "
+                        v-model="filters.shop_id"
                         type="number"
                         min="1"
                         step="1"
                         placeholder="Any"
                     >
                 </div>
-
 
                 <!-- CUSTOMER ID -->
 
@@ -1214,9 +814,7 @@ onMounted(() => {
 
                     <input
                         id="customer-id"
-                        v-model="
-                            filters.customer_id
-                        "
+                        v-model="filters.customer_id"
                         type="number"
                         min="1"
                         step="1"
@@ -1224,8 +822,7 @@ onMounted(() => {
                     >
                 </div>
 
-
-                <!-- FROM -->
+                <!-- DATE FROM -->
 
                 <div class="filter-field">
                     <label for="date-from">
@@ -1234,15 +831,12 @@ onMounted(() => {
 
                     <input
                         id="date-from"
-                        v-model="
-                            filters.date_from
-                        "
+                        v-model="filters.date_from"
                         type="date"
                     >
                 </div>
 
-
-                <!-- TO -->
+                <!-- DATE TO -->
 
                 <div class="filter-field">
                     <label for="date-to">
@@ -1251,80 +845,59 @@ onMounted(() => {
 
                     <input
                         id="date-to"
-                        v-model="
-                            filters.date_to
-                        "
+                        v-model="filters.date_to"
                         type="date"
                     >
                 </div>
 
-
-                <!-- ACTIONS -->
+                <!-- FILTER ACTIONS -->
 
                 <div class="filter-actions appointments-filter-actions">
                     <button
                         type="submit"
                         class="primary-button"
-                        :disabled="
-                            isLoading
-                        "
+                        :disabled="isLoading"
                     >
                         <svg
                             viewBox="0 0 24 24"
                             aria-hidden="true"
                         >
-                            <path
-                                d="M4 6h16M7 12h10M10 18h4"
-                            />
+                            <path d="M4 6h16M7 12h10M10 18h4" />
                         </svg>
 
-                        <span>
-                            Apply filters
-                        </span>
+                        <span>Apply filters</span>
                     </button>
 
                     <button
                         type="button"
                         class="secondary-button"
                         :disabled="
-                            isLoading
-                            ||
+                            isLoading ||
                             activeFiltersCount === 0
                         "
-                        @click="
-                            resetFilters
-                        "
+                        @click="resetFilters"
                     >
                         <svg
                             viewBox="0 0 24 24"
                             aria-hidden="true"
                         >
-                            <path
-                                d="M4 4v6h6"
-                            />
+                            <path d="M4 4v6h6" />
 
-                            <path
-                                d="M5.5 15a8 8 0 102-8"
-                            />
+                            <path d="M5.5 15a8 8 0 102-8" />
                         </svg>
 
-                        <span>
-                            Reset
-                        </span>
+                        <span>Reset</span>
                     </button>
                 </div>
             </form>
         </section>
 
-
-        <!-- ============================================================
-             ERROR
-             ============================================================ -->
+        <!-- ==================================================
+             ERROR MESSAGE
+             ================================================== -->
 
         <div
-            v-if="
-                errorMessage
-            "
+            v-if="errorMessage"
             class="error-message appointments-error"
             role="alert"
         >
@@ -1339,13 +912,9 @@ onMounted(() => {
                         r="9"
                     />
 
-                    <path
-                        d="M12 8v5"
-                    />
+                    <path d="M12 8v5" />
 
-                    <path
-                        d="M12 17h.01"
-                    />
+                    <path d="M12 17h.01" />
                 </svg>
             </div>
 
@@ -1354,17 +923,13 @@ onMounted(() => {
                     Unable to load appointments
                 </strong>
 
-                <p>
-                    {{ errorMessage }}
-                </p>
+                <p>{{ errorMessage }}</p>
             </div>
 
             <button
                 type="button"
                 class="retry-button"
-                :disabled="
-                    isLoading
-                "
+                :disabled="isLoading"
                 @click="
                     loadAppointments(
                         pagination.current_page
@@ -1375,12 +940,12 @@ onMounted(() => {
             </button>
         </div>
 
-
-        <!-- ============================================================
-             TABLE CARD
-             ============================================================ -->
+        <!-- ==================================================
+             APPOINTMENTS TABLE
+             ================================================== -->
 
         <section class="appointments-card">
+
             <!-- TABLE HEADER -->
 
             <div class="table-header appointments-table-header">
@@ -1409,16 +974,10 @@ onMounted(() => {
                     </div>
 
                     <div>
-                        <h3>
-                            Booking records
-                        </h3>
+                        <h3>Booking records</h3>
 
                         <p>
-                            {{
-                                formatNumber(
-                                    pagination.total
-                                )
-                            }}
+                            {{ formatNumber(pagination.total) }}
                             appointment{{
                                 pagination.total === 1
                                     ? ''
@@ -1428,19 +987,14 @@ onMounted(() => {
                     </div>
                 </div>
 
-
                 <div class="table-header-actions">
                     <div
-                        v-if="
-                            activeFiltersCount > 0
-                        "
+                        v-if="activeFiltersCount > 0"
                         class="table-filter-status"
                     >
                         <span class="table-filter-dot" />
-
                         Filtered
                     </div>
-
 
                     <div class="per-page">
                         <label for="appointments-per-page">
@@ -1449,70 +1003,24 @@ onMounted(() => {
 
                         <select
                             id="appointments-per-page"
-                            v-model.number="
-                                filters.per_page
-                            "
-                            :disabled="
-                                isLoading
-                            "
-                            @change="
-                                loadAppointments(
-                                    1
-                                )
-                            "
+                            v-model.number="filters.per_page"
+                            :disabled="isLoading"
+                            @change="loadAppointments(1)"
                         >
-                            <option :value="10">
-                                10
-                            </option>
-
-                            <option :value="20">
-                                20
-                            </option>
-
-                            <option :value="50">
-                                50
-                            </option>
+                            <option :value="10">10</option>
+                            <option :value="20">20</option>
+                            <option :value="50">50</option>
                         </select>
                     </div>
                 </div>
             </div>
 
-
-            <!-- ========================================================
-                 LOADING
-                 ======================================================== -->
-
-            <div
-                v-if="
-                    isLoading
-                    &&
-                    appointments.length === 0
-                "
-                class="appointments-loading-state"
-            >
-                <div class="appointments-loading-icon">
-                    <div class="spinner" />
-                </div>
-
-                <h3>
-                    Loading appointments
-                </h3>
-
-                <p>
-                    Retrieving booking records from
-                    StyleHub shops.
-                </p>
-            </div>
-
-
-            <!-- ========================================================
-                 EMPTY
-                 ======================================================== -->
+            <!-- ==================================================
+                 EMPTY STATE
+                 ================================================== -->
 
             <div
-                v-else-if="
-                    appointments.length === 0
-                "
+                v-if="appointments.length === 0"
                 class="empty-state appointments-empty-state"
             >
                 <div class="empty-icon">
@@ -1532,9 +1040,7 @@ onMounted(() => {
                             d="M8 3v4M16 3v4M3 10h18"
                         />
 
-                        <path
-                            d="M8 14h8"
-                        />
+                        <path d="M8 14h8" />
                     </svg>
                 </div>
 
@@ -1548,62 +1054,34 @@ onMounted(() => {
                 </p>
 
                 <button
-                    v-if="
-                        activeFiltersCount > 0
-                    "
+                    v-if="activeFiltersCount > 0"
                     type="button"
                     class="secondary-button empty-reset-button"
-                    @click="
-                        resetFilters
-                    "
+                    :disabled="isLoading"
+                    @click="resetFilters"
                 >
                     Clear filters
                 </button>
             </div>
 
-
-            <!-- ========================================================
+            <!-- ==================================================
                  TABLE
-                 ======================================================== -->
+                 ================================================== -->
 
             <div
                 v-else
                 class="table-wrapper appointments-table-wrapper"
-                :class="{
-                    'table-refreshing':
-                        isLoading,
-                }"
             >
                 <table>
                     <thead>
                         <tr>
-                            <th>
-                                Appointment
-                            </th>
-
-                            <th>
-                                Customer
-                            </th>
-
-                            <th>
-                                Shop
-                            </th>
-
-                            <th>
-                                Service
-                            </th>
-
-                            <th>
-                                Schedule
-                            </th>
-
-                            <th>
-                                Status
-                            </th>
-
-                            <th>
-                                Reschedules
-                            </th>
+                            <th>Appointment</th>
+                            <th>Customer</th>
+                            <th>Shop</th>
+                            <th>Service</th>
+                            <th>Schedule</th>
+                            <th>Status</th>
+                            <th>Reschedules</th>
 
                             <th class="table-actions-heading">
                                 Action
@@ -1611,23 +1089,16 @@ onMounted(() => {
                         </tr>
                     </thead>
 
-
                     <tbody>
                         <tr
-                            v-for="
-                                appointment
-                                in appointments
-                            "
-                            :key="
-                                appointment.id
-                            "
+                            v-for="appointment in appointments"
+                            :key="appointment.id"
                             class="appointment-table-row"
                             @dblclick="
-                                openAppointment(
-                                    appointment
-                                )
+                                openAppointment(appointment)
                             "
                         >
+
                             <!-- APPOINTMENT -->
 
                             <td>
@@ -1663,7 +1134,6 @@ onMounted(() => {
                                 </div>
                             </td>
 
-
                             <!-- CUSTOMER -->
 
                             <td>
@@ -1679,9 +1149,7 @@ onMounted(() => {
                                     <div>
                                         <strong>
                                             {{
-                                                appointment
-                                                    .customer
-                                                    ?.full_name
+                                                appointment.customer?.full_name
                                                 ||
                                                 'Unavailable'
                                             }}
@@ -1689,9 +1157,7 @@ onMounted(() => {
 
                                         <span class="table-email">
                                             {{
-                                                appointment
-                                                    .customer
-                                                    ?.email
+                                                appointment.customer?.email
                                                 ||
                                                 'No email'
                                             }}
@@ -1699,7 +1165,6 @@ onMounted(() => {
                                     </div>
                                 </div>
                             </td>
-
 
                             <!-- SHOP -->
 
@@ -1723,9 +1188,7 @@ onMounted(() => {
                                     <div>
                                         <strong>
                                             {{
-                                                appointment
-                                                    .shop
-                                                    ?.name
+                                                appointment.shop?.name
                                                 ||
                                                 'Unavailable'
                                             }}
@@ -1733,9 +1196,7 @@ onMounted(() => {
 
                                         <span>
                                             {{
-                                                appointment
-                                                    .shop
-                                                    ?.city
+                                                appointment.shop?.city
                                                 ||
                                                 'Location unavailable'
                                             }}
@@ -1744,20 +1205,16 @@ onMounted(() => {
                                 </div>
                             </td>
 
-
                             <!-- SERVICE -->
 
                             <td>
                                 <div class="service-cell appointment-service">
                                     <strong>
                                         {{
-                                            appointment
-                                                .booking_snapshot
+                                            appointment.booking_snapshot
                                                 ?.service_name
                                             ||
-                                            appointment
-                                                .service
-                                                ?.name
+                                            appointment.service?.name
                                             ||
                                             'Unavailable'
                                         }}
@@ -1781,7 +1238,6 @@ onMounted(() => {
                                     </span>
                                 </div>
                             </td>
-
 
                             <!-- SCHEDULE -->
 
@@ -1808,8 +1264,7 @@ onMounted(() => {
                                         <strong>
                                             {{
                                                 formatDate(
-                                                    appointment
-                                                        .appointment_date
+                                                    appointment.appointment_date
                                                 )
                                             }}
                                         </strong>
@@ -1818,25 +1273,20 @@ onMounted(() => {
                                     <span class="schedule-time">
                                         {{
                                             formatTime(
-                                                appointment
-                                                    .start_time
+                                                appointment.start_time
                                             )
                                         }}
 
-                                        <span>
-                                            –
-                                        </span>
+                                        <span>–</span>
 
                                         {{
                                             formatTime(
-                                                appointment
-                                                    .end_time
+                                                appointment.end_time
                                             )
                                         }}
                                     </span>
                                 </div>
                             </td>
-
 
                             <!-- STATUS -->
 
@@ -1858,7 +1308,6 @@ onMounted(() => {
                                     }}
                                 </span>
                             </td>
-
 
                             <!-- RESCHEDULES -->
 
@@ -1901,7 +1350,6 @@ onMounted(() => {
                                 </div>
                             </td>
 
-
                             <!-- ACTION -->
 
                             <td class="actions-cell">
@@ -1909,14 +1357,10 @@ onMounted(() => {
                                     type="button"
                                     class="view-button appointment-view-button"
                                     @click="
-                                        openAppointment(
-                                            appointment
-                                        )
+                                        openAppointment(appointment)
                                     "
                                 >
-                                    <span>
-                                        View
-                                    </span>
+                                    <span>View</span>
 
                                     <svg
                                         viewBox="0 0 24 24"
@@ -1933,53 +1377,39 @@ onMounted(() => {
                 </table>
             </div>
 
-
-            <!-- ========================================================
+            <!-- ==================================================
                  PAGINATION
-                 ======================================================== -->
+                 ================================================== -->
 
             <div
-                v-if="
-                    pagination.total > 0
-                "
+                v-if="pagination.total > 0"
                 class="pagination appointments-pagination"
             >
                 <div class="pagination-summary">
-                    <span>
-                        Showing
-                    </span>
+                    <span>Showing</span>
 
                     <strong>
                         {{ firstResult }}
                     </strong>
 
-                    <span>
-                        –
-                    </span>
+                    <span>–</span>
 
                     <strong>
                         {{ lastResult }}
                     </strong>
 
-                    <span>
-                        of
-                    </span>
+                    <span>of</span>
 
                     <strong>
-                        {{
-                            formatNumber(
-                                pagination.total
-                            )
-                        }}
+                        {{ formatNumber(pagination.total) }}
                     </strong>
 
-                    <span>
-                        appointments
-                    </span>
+                    <span>appointments</span>
                 </div>
 
-
                 <div class="pagination-buttons">
+                    <!-- PREVIOUS -->
+
                     <button
                         type="button"
                         class="page-button pagination-arrow"
@@ -2003,48 +1433,34 @@ onMounted(() => {
                             />
                         </svg>
 
-                        <span>
-                            Previous
-                        </span>
+                        <span>Previous</span>
                     </button>
 
+                    <!-- PAGE NUMBERS -->
 
                     <button
-                        v-for="
-                            page
-                            in visiblePages
-                        "
-                        :key="
-                            page
-                        "
+                        v-for="page in visiblePages"
+                        :key="page"
                         type="button"
                         class="page-button"
                         :class="{
                             active:
-                                page
-                                ===
-                                pagination.current_page,
+                                page === pagination.current_page,
                         }"
-                        :disabled="
-                            isLoading
-                        "
-                        @click="
-                            changePage(
-                                page
-                            )
-                        "
+                        :disabled="isLoading"
+                        @click="changePage(page)"
                     >
                         {{ page }}
                     </button>
 
+                    <!-- NEXT -->
 
                     <button
                         type="button"
                         class="page-button pagination-arrow"
                         :disabled="
-                            pagination.current_page
-                            >=
-                            pagination.last_page
+                            pagination.current_page >=
+                                pagination.last_page
                             ||
                             isLoading
                         "
@@ -2054,9 +1470,7 @@ onMounted(() => {
                             )
                         "
                     >
-                        <span>
-                            Next
-                        </span>
+                        <span>Next</span>
 
                         <svg
                             viewBox="0 0 24 24"
@@ -2073,247 +1487,145 @@ onMounted(() => {
     </div>
 </template>
 
-
 <style scoped src="./admin-page.css"></style>
 
 <style scoped>
-/*
-|--------------------------------------------------------------------------
-| PAGE
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   PAGE
+   ============================================================ */
 
 .appointments-page {
     display: flex;
     flex-direction: column;
-
     gap: 14px;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| INTRODUCTION
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   INTRODUCTION
+   ============================================================ */
 
 .appointments-intro {
     min-height: 126px;
-
     display: flex;
     align-items: center;
     justify-content: space-between;
-
     gap: 24px;
-
-    padding:
-        20px
-        22px;
-
-    border:
-        1px solid
-        var(--sh-border);
-
-    border-radius:
-        var(--sh-radius-xl);
-
+    padding: 20px 22px;
+    border: 1px solid var(--sh-border);
+    border-radius: var(--sh-radius-xl);
     background:
         radial-gradient(
             circle at 94% 10%,
-            rgba(
-                214,
-                154,
-                45,
-                0.07
-            ),
+            rgba(214, 154, 45, 0.07),
             transparent 26%
         ),
         var(--sh-surface);
-
-    box-shadow:
-        var(--sh-shadow-sm);
+    box-shadow: var(--sh-shadow-sm);
 }
 
 .appointments-intro-copy {
     min-width: 0;
-
     flex: 1;
 }
 
 .appointments-intro-label {
     width: fit-content;
-
     display: flex;
     align-items: center;
-
     gap: 7px;
-
     margin-bottom: 5px;
-
-    color:
-        var(--sh-accent);
-
+    color: var(--sh-accent);
     font-size: 8.5px;
     font-weight: 800;
-
     letter-spacing: 1.1px;
-
-    text-transform:
-        uppercase;
+    text-transform: uppercase;
 }
 
 .appointments-intro-dot {
     width: 6px;
     height: 6px;
-
-    border-radius:
-        999px;
-
-    background:
-        var(--sh-accent);
-
-    box-shadow:
-        0 0 0 4px
-        rgba(
-            214,
-            154,
-            45,
-            0.08
-        );
+    border-radius: 999px;
+    background: var(--sh-accent);
+    box-shadow: 0 0 0 4px rgba(214, 154, 45, 0.08);
 }
 
 .appointments-intro h2 {
     margin: 0;
-
-    color:
-        var(--sh-text);
-
+    color: var(--sh-text);
     font-size: 22px;
     font-weight: 800;
-
     line-height: 29px;
-
-    letter-spacing:
-        -0.55px;
+    letter-spacing: -0.55px;
 }
 
 .appointments-intro p {
     max-width: 680px;
-
-    margin:
-        5px
-        0
-        0;
-
-    color:
-        var(--sh-text-3);
-
+    margin: 5px 0 0;
+    color: var(--sh-text-3);
     font-size: 10.5px;
-
     line-height: 17px;
 }
 
 .appointments-intro-actions {
     flex: 0 0 auto;
-
     display: flex;
     align-items: center;
-
     gap: 10px;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| TOTAL CARD
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   TOTAL CARD
+   ============================================================ */
 
 .appointments-total-card {
     min-width: 170px;
-
     display: flex;
     align-items: center;
-
     gap: 10px;
-
-    padding:
-        10px
-        12px;
-
-    border:
-        1px solid
-        var(--sh-border);
-
+    padding: 10px 12px;
+    border: 1px solid var(--sh-border);
     border-radius: 12px;
-
-    background:
-        var(--sh-surface-muted);
+    background: var(--sh-surface-muted);
 }
 
 .appointments-total-icon {
     width: 38px;
     height: 38px;
-
-    flex:
-        0
-        0
-        38px;
-
+    flex: 0 0 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-
     border-radius: 10px;
-
-    background:
-        var(--sh-accent-soft);
-
-    color:
-        var(--sh-accent);
+    background: var(--sh-accent-soft);
+    color: var(--sh-accent);
 }
 
 .appointments-total-icon svg {
     width: 18px;
     height: 18px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.7;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
-.appointments-total-card
-> div:last-child {
+.appointments-total-card > div:last-child {
     display: flex;
     flex-direction: column;
-
     gap: 1px;
 }
 
 .appointments-total-card span {
-    color:
-        var(--sh-text-3);
-
+    color: var(--sh-text-3);
     font-size: 8.5px;
     font-weight: 600;
 }
 
 .appointments-total-card strong {
-    color:
-        var(--sh-text);
-
+    color: var(--sh-text);
     font-size: 17px;
     font-weight: 800;
-
     line-height: 21px;
 }
 
@@ -2324,349 +1636,196 @@ onMounted(() => {
 .appointments-refresh-button svg {
     width: 15px;
     height: 15px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.8;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| MONITORING BANNER
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   MONITORING BANNER
+   ============================================================ */
 
 .monitoring-banner {
     display: flex;
     align-items: center;
-
     gap: 11px;
-
-    padding:
-        12px
-        14px;
-
-    border:
-        1px solid
-        #d7e2f7;
-
-    border-radius:
-        13px;
-
+    padding: 12px 14px;
+    border: 1px solid #d7e2f7;
+    border-radius: 13px;
     background:
         linear-gradient(
             135deg,
             var(--sh-info-bg),
             #f8fbff
         );
-
-    box-shadow:
-        var(--sh-shadow-sm);
+    box-shadow: var(--sh-shadow-sm);
 }
 
 .monitoring-icon {
     width: 37px;
     height: 37px;
-
-    flex:
-        0
-        0
-        37px;
-
+    flex: 0 0 37px;
     display: flex;
     align-items: center;
     justify-content: center;
-
     border-radius: 10px;
-
-    background:
-        #ffffff;
-
-    color:
-        var(--sh-info);
+    background: #ffffff;
+    color: var(--sh-info);
 }
 
 .monitoring-icon svg {
     width: 18px;
     height: 18px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.7;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .monitoring-copy {
     min-width: 0;
-
     flex: 1;
 }
 
 .monitoring-copy strong {
     display: block;
-
-    color:
-        #31558e;
-
+    color: #31558e;
     font-size: 9.5px;
     font-weight: 800;
 }
 
 .monitoring-copy p {
     max-width: 820px;
-
-    margin:
-        3px
-        0
-        0;
-
-    color:
-        #607ca9;
-
+    margin: 3px 0 0;
+    color: #607ca9;
     font-size: 8.5px;
-
     line-height: 14px;
 }
 
 .monitoring-badge {
     min-height: 25px;
-
     display: inline-flex;
     align-items: center;
-
-    padding:
-        0
-        9px;
-
-    border:
-        1px solid
-        #ccdaf1;
-
-    border-radius:
-        999px;
-
-    background:
-        #ffffff;
-
-    color:
-        var(--sh-info);
-
+    padding: 0 9px;
+    border: 1px solid #ccdaf1;
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--sh-info);
     font-size: 7.5px;
     font-weight: 800;
-
     letter-spacing: 0.5px;
-
-    text-transform:
-        uppercase;
-
+    text-transform: uppercase;
     white-space: nowrap;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| SUMMARY GRID
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   SUMMARY CARDS
+   ============================================================ */
 
 .appointment-summary-grid {
     display: grid;
-
-    grid-template-columns:
-        repeat(
-            5,
-            minmax(
-                0,
-                1fr
-            )
-        );
-
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 11px;
 }
 
 .appointment-summary-card {
     min-width: 0;
-
     min-height: 82px;
-
     display: flex;
     align-items: center;
-
     gap: 10px;
-
-    padding:
-        12px
-        13px;
-
-    border:
-        1px solid
-        var(--sh-border);
-
+    padding: 12px 13px;
+    border: 1px solid var(--sh-border);
     border-radius: 13px;
-
-    background:
-        var(--sh-surface);
-
-    box-shadow:
-        var(--sh-shadow-sm);
-
+    background: var(--sh-surface);
+    box-shadow: var(--sh-shadow-sm);
     transition:
         transform 0.15s ease,
         box-shadow 0.15s ease;
 }
 
 .appointment-summary-card:hover {
-    transform:
-        translateY(
-            -1px
-        );
-
-    box-shadow:
-        var(--sh-shadow-card);
+    transform: translateY(-1px);
+    box-shadow: var(--sh-shadow-card);
 }
 
 .summary-status-icon {
     width: 38px;
     height: 38px;
-
-    flex:
-        0
-        0
-        38px;
-
+    flex: 0 0 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-
     border-radius: 10px;
 }
 
 .summary-status-icon svg {
     width: 18px;
     height: 18px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.7;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .summary-status-icon.pending {
-    background:
-        var(--sh-warning-bg) !important;
-
-    color:
-        var(--sh-warning) !important;
+    background: var(--sh-warning-bg) !important;
+    color: var(--sh-warning) !important;
 }
 
 .summary-status-icon.confirmed {
-    background:
-        var(--sh-info-bg) !important;
-
-    color:
-        var(--sh-info) !important;
+    background: var(--sh-info-bg) !important;
+    color: var(--sh-info) !important;
 }
 
 .summary-status-icon.completed {
-    background:
-        var(--sh-success-bg) !important;
-
-    color:
-        var(--sh-success) !important;
+    background: var(--sh-success-bg) !important;
+    color: var(--sh-success) !important;
 }
 
 .summary-status-icon.cancelled,
 .summary-status-icon.declined {
-    background:
-        var(--sh-danger-bg) !important;
-
-    color:
-        var(--sh-danger) !important;
+    background: var(--sh-danger-bg) !important;
+    color: var(--sh-danger) !important;
 }
 
 .summary-status-copy {
     min-width: 0;
-
     flex: 1;
-
     display: grid;
-
-    grid-template-columns:
-        minmax(
-            0,
-            1fr
-        )
-        auto;
-
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-
     column-gap: 7px;
 }
 
 .summary-status-copy span {
     grid-column: 1;
-
-    color:
-        var(--sh-text-3);
-
+    color: var(--sh-text-3);
     font-size: 8.5px;
     font-weight: 700;
 }
 
 .summary-status-copy strong {
     grid-column: 2;
-    grid-row:
-        1
-        / 3;
-
-    color:
-        var(--sh-text);
-
+    grid-row: 1 / 3;
+    color: var(--sh-text);
     font-size: 18px;
     font-weight: 800;
 }
 
 .summary-status-copy small {
     grid-column: 1;
-
-    color:
-        #a1a8b2;
-
+    color: #a1a8b2;
     font-size: 7.5px;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| FILTER CARD
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   FILTER CARD
+   ============================================================ */
 
 .appointments-filter-card {
     padding: 0;
@@ -2674,160 +1833,85 @@ onMounted(() => {
 
 .filter-card-heading {
     min-height: 66px;
-
     display: flex;
     align-items: center;
     justify-content: space-between;
-
     gap: 14px;
-
-    padding:
-        13px
-        16px;
-
-    border-bottom:
-        1px solid
-        var(--sh-border);
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--sh-border);
 }
 
 .filter-heading-left {
     min-width: 0;
-
     display: flex;
     align-items: center;
-
     gap: 10px;
 }
 
 .filter-heading-icon {
     width: 36px;
     height: 36px;
-
-    flex:
-        0
-        0
-        36px;
-
+    flex: 0 0 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-
     border-radius: 10px;
-
-    background:
-        var(--sh-surface-muted);
-
-    color:
-        var(--sh-text-2);
+    background: var(--sh-surface-muted);
+    color: var(--sh-text-2);
 }
 
 .filter-heading-icon svg {
     width: 17px;
     height: 17px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.7;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .filter-heading-left h3 {
     margin: 0;
-
-    color:
-        var(--sh-text);
-
+    color: var(--sh-text);
     font-size: 12px;
     font-weight: 800;
 }
 
 .filter-heading-left p {
-    margin:
-        2px
-        0
-        0;
-
-    color:
-        var(--sh-text-3);
-
+    margin: 2px 0 0;
+    color: var(--sh-text-3);
     font-size: 8.5px;
 }
 
 .active-filter-count {
     min-height: 25px;
-
     display: inline-flex;
     align-items: center;
-
-    padding:
-        0
-        8px;
-
-    border:
-        1px solid
-        #eadfbf;
-
-    border-radius:
-        999px;
-
-    background:
-        var(--sh-accent-soft);
-
-    color:
-        #845d1d;
-
+    padding: 0 8px;
+    border: 1px solid #eadfbf;
+    border-radius: 999px;
+    background: var(--sh-accent-soft);
+    color: #845d1d;
     font-size: 8px;
     font-weight: 800;
-
     white-space: nowrap;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| FILTER FORM
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   FILTER FORM
+   ============================================================ */
 
 .appointments-filters {
     display: grid;
 
     grid-template-columns:
-        minmax(
-            230px,
-            1.7fr
-        )
-        repeat(
-            3,
-            minmax(
-                120px,
-                0.8fr
-            )
-        )
-        repeat(
-            2,
-            minmax(
-                145px,
-                0.9fr
-            )
-        );
+        minmax(230px, 1.7fr)
+        repeat(3, minmax(120px, 0.8fr))
+        repeat(2, minmax(145px, 0.9fr));
 
     align-items: end;
-
     gap: 11px;
-
-    padding:
-        15px
-        16px
-        16px;
+    padding: 15px 16px 16px;
 }
 
 .appointment-search {
@@ -2835,172 +1919,107 @@ onMounted(() => {
 }
 
 .appointments-filter-actions {
-    grid-column:
-        1
-        / -1;
-
+    grid-column: 1 / -1;
     align-items: center;
 }
 
-.appointments-filter-actions
-.primary-button,
-.appointments-filter-actions
-.secondary-button {
+.appointments-filter-actions .primary-button,
+.appointments-filter-actions .secondary-button {
     min-height: 42px;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| ERROR
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   ERROR
+   ============================================================ */
 
 .appointments-error {
     align-items: center;
-
     margin: 0;
 }
 
 .appointments-error-icon {
     width: 38px;
     height: 38px;
-
-    flex:
-        0
-        0
-        38px;
-
+    flex: 0 0 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-
     border-radius: 10px;
-
-    background:
-        rgba(
-            169,
-            79,
-            79,
-            0.08
-        );
+    background: rgba(169, 79, 79, 0.08);
 }
 
 .appointments-error-icon svg {
     width: 18px;
     height: 18px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.7;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .appointments-error-copy {
     min-width: 0;
-
     flex: 1;
 }
 
 .appointments-error-copy strong {
     display: block;
-
     font-size: 10.5px;
 }
 
 .appointments-error-copy p {
-    margin:
-        2px
-        0
-        0;
+    margin: 2px 0 0;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| TABLE HEADER
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   TABLE HEADER
+   ============================================================ */
 
 .appointments-table-header {
-    padding:
-        13px
-        16px;
+    padding: 13px 16px;
 }
 
 .table-heading {
     min-width: 0;
-
     display: flex;
     align-items: center;
-
     gap: 10px;
 }
 
 .table-heading-icon {
     width: 36px;
     height: 36px;
-
-    flex:
-        0
-        0
-        36px;
-
+    flex: 0 0 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-
     border-radius: 10px;
-
-    background:
-        var(--sh-accent-soft);
-
-    color:
-        var(--sh-accent);
+    background: var(--sh-accent-soft);
+    color: var(--sh-accent);
 }
 
 .table-heading-icon svg {
     width: 17px;
     height: 17px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.7;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .table-header-actions {
     display: flex;
     align-items: center;
-
     gap: 10px;
 }
 
 .table-filter-status {
     display: inline-flex;
     align-items: center;
-
     gap: 6px;
-
-    color:
-        var(--sh-text-3);
-
+    color: var(--sh-text-3);
     font-size: 8.5px;
     font-weight: 700;
 }
@@ -3008,58 +2027,35 @@ onMounted(() => {
 .table-filter-dot {
     width: 6px;
     height: 6px;
-
-    border-radius:
-        999px;
-
-    background:
-        var(--sh-accent);
+    border-radius: 999px;
+    background: var(--sh-accent);
 }
 
 .per-page {
     display: flex;
     align-items: center;
-
     gap: 6px;
 }
 
 .per-page label {
-    color:
-        var(--sh-text-3);
-
+    color: var(--sh-text-3);
     font-size: 8.5px;
     font-weight: 700;
 }
 
 .per-page select {
     width: 69px;
-
     min-height: 34px;
-
-    padding:
-        5px
-        8px;
-
+    padding: 5px 8px;
     font-size: 9px;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| TABLE
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   TABLE
+   ============================================================ */
 
 .appointments-table-wrapper {
-    transition:
-        opacity
-        0.16s ease;
-}
-
-.table-refreshing {
-    opacity: 0.55;
-
-    pointer-events: none;
+    transition: opacity 0.16s ease;
 }
 
 .appointments-table-wrapper table {
@@ -3070,71 +2066,46 @@ onMounted(() => {
     cursor: default;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| APPOINTMENT REFERENCE
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   APPOINTMENT REFERENCE
+   ============================================================ */
 
 .appointment-reference {
     display: flex;
     align-items: center;
-
     gap: 9px;
 }
 
 .appointment-reference-icon {
     width: 34px;
     height: 34px;
-
-    flex:
-        0
-        0
-        34px;
-
+    flex: 0 0 34px;
     display: flex;
     align-items: center;
     justify-content: center;
-
     border-radius: 9px;
-
-    background:
-        var(--sh-accent-soft);
-
-    color:
-        var(--sh-accent);
+    background: var(--sh-accent-soft);
+    color: var(--sh-accent);
 }
 
 .appointment-reference-icon svg {
     width: 16px;
     height: 16px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.7;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
-.appointment-reference
-> div:last-child {
+.appointment-reference > div:last-child {
     display: flex;
     flex-direction: column;
-
     gap: 2px;
 }
 
 .appointment-reference strong {
-    color:
-        var(--sh-text);
+    color: var(--sh-text);
 
     font-family:
         ui-monospace,
@@ -3149,137 +2120,85 @@ onMounted(() => {
 }
 
 .appointment-reference span {
-    color:
-        var(--sh-text-3);
-
+    color: var(--sh-text-3);
     font-size: 8px;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| CUSTOMER
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   CUSTOMER
+   ============================================================ */
 
 .appointment-customer {
     display: flex;
     align-items: center;
-
     gap: 9px;
 }
 
 .customer-avatar {
     width: 34px;
     height: 34px;
-
-    flex:
-        0
-        0
-        34px;
-
+    flex: 0 0 34px;
     display: flex;
     align-items: center;
     justify-content: center;
-
-    border:
-        1px solid
-        #dce6f8;
-
+    border: 1px solid #dce6f8;
     border-radius: 10px;
-
-    background:
-        var(--sh-info-bg);
-
-    color:
-        var(--sh-info);
-
+    background: var(--sh-info-bg);
+    color: var(--sh-info);
     font-size: 10px;
     font-weight: 800;
 }
 
-.appointment-customer
-> div:last-child {
+.appointment-customer > div:last-child {
     min-width: 0;
 }
 
 .table-email {
     max-width: 190px;
-
     overflow: hidden;
-
-    text-overflow:
-        ellipsis;
-
-    white-space:
-        nowrap;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| SHOP
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   SHOP
+   ============================================================ */
 
 .appointment-shop {
     display: flex;
     align-items: center;
-
     gap: 8px;
 }
 
 .shop-table-icon {
     width: 31px;
     height: 31px;
-
-    flex:
-        0
-        0
-        31px;
-
+    flex: 0 0 31px;
     display: flex;
     align-items: center;
     justify-content: center;
-
     border-radius: 9px;
-
-    background:
-        var(--sh-surface-muted);
-
-    color:
-        var(--sh-text-3);
+    background: var(--sh-surface-muted);
+    color: var(--sh-text-3);
 }
 
 .shop-table-icon svg {
     width: 15px;
     height: 15px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.7;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
-.appointment-shop
-> div:last-child {
+.appointment-shop > div:last-child {
     min-width: 0;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| SERVICE
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   SERVICE
+   ============================================================ */
 
 .appointment-service {
     min-width: 150px;
@@ -3287,118 +2206,72 @@ onMounted(() => {
 
 .snapshot-label {
     width: fit-content;
-
     display: inline-flex !important;
     align-items: center;
-
     gap: 4px;
-
-    margin-top:
-        4px !important;
-
-    color:
-        var(--sh-text-3) !important;
-
-    font-size:
-        7.5px !important;
+    margin-top: 4px !important;
+    color: var(--sh-text-3) !important;
+    font-size: 7.5px !important;
 }
 
 .snapshot-label svg {
     width: 10px;
     height: 10px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.7;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| SCHEDULE
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   SCHEDULE
+   ============================================================ */
 
 .appointment-schedule {
     min-width: 145px;
-
     display: flex;
     flex-direction: column;
-
     gap: 4px;
 }
 
 .schedule-date {
     display: flex;
     align-items: center;
-
     gap: 5px;
 }
 
 .schedule-date svg {
     width: 12px;
     height: 12px;
-
-    flex:
-        0
-        0
-        12px;
-
+    flex: 0 0 12px;
     fill: none;
-
-    stroke:
-        var(--sh-accent);
-
+    stroke: var(--sh-accent);
     stroke-width: 1.7;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .schedule-date strong {
-    color:
-        var(--sh-text);
-
+    color: var(--sh-text);
     font-size: 9.5px;
     font-weight: 750;
 }
 
 .schedule-time {
     padding-left: 17px;
-
-    color:
-        var(--sh-text-3);
-
+    color: var(--sh-text-3);
     font-size: 8.5px;
 }
 
 .schedule-time > span {
-    margin:
-        0
-        2px;
-
-    color:
-        #bcc1c8;
+    margin: 0 2px;
+    color: #bcc1c8;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| STATUS
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   STATUS
+   ============================================================ */
 
 .appointment-status {
     gap: 5px;
@@ -3407,105 +2280,56 @@ onMounted(() => {
 .status-dot-small {
     width: 5px;
     height: 5px;
-
-    flex:
-        0
-        0
-        5px;
-
-    border-radius:
-        999px;
-
-    background:
-        currentColor;
+    flex: 0 0 5px;
+    border-radius: 999px;
+    background: currentColor;
 }
 
 .appointment-status.confirmed {
-    border-color:
-        #d9e4f8 !important;
-
-    background:
-        var(--sh-info-bg) !important;
-
-    color:
-        var(--sh-info) !important;
+    border-color: #d9e4f8 !important;
+    background: var(--sh-info-bg) !important;
+    color: var(--sh-info) !important;
 }
 
 .appointment-status.completed {
-    border-color:
-        #d4ebdf !important;
-
-    background:
-        var(--sh-success-bg) !important;
-
-    color:
-        var(--sh-success) !important;
+    border-color: #d4ebdf !important;
+    background: var(--sh-success-bg) !important;
+    color: var(--sh-success) !important;
 }
 
 .appointment-status.pending {
-    border-color:
-        #f0dfb9 !important;
-
-    background:
-        var(--sh-warning-bg) !important;
-
-    color:
-        var(--sh-warning) !important;
+    border-color: #f0dfb9 !important;
+    background: var(--sh-warning-bg) !important;
+    color: var(--sh-warning) !important;
 }
 
 .appointment-status.cancelled,
 .appointment-status.declined {
-    border-color:
-        #eed3d3 !important;
-
-    background:
-        var(--sh-danger-bg) !important;
-
-    color:
-        var(--sh-danger) !important;
+    border-color: #eed3d3 !important;
+    background: var(--sh-danger-bg) !important;
+    color: var(--sh-danger) !important;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| RESCHEDULES
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   RESCHEDULES
+   ============================================================ */
 
 .reschedule-count {
     width: fit-content;
-
     display: inline-flex;
     align-items: center;
-
     gap: 6px;
-
-    padding:
-        4px
-        7px;
-
-    border:
-        1px solid
-        var(--sh-border);
-
+    padding: 4px 7px;
+    border: 1px solid var(--sh-border);
     border-radius: 9px;
-
-    background:
-        var(--sh-surface-muted);
-
-    color:
-        var(--sh-text-3);
+    background: var(--sh-surface-muted);
+    color: var(--sh-text-3);
 }
 
 .reschedule-count.has-reschedules {
-    border-color:
-        #eadfbf;
-
-    background:
-        var(--sh-accent-soft);
-
-    color:
-        #8c641f;
+    border-color: #eadfbf;
+    background: var(--sh-accent-soft);
+    color: #8c641f;
 }
 
 .reschedule-icon {
@@ -3517,19 +2341,11 @@ onMounted(() => {
 .reschedule-icon svg {
     width: 12px;
     height: 12px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.8;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .reschedule-count strong {
@@ -3537,118 +2353,32 @@ onMounted(() => {
     font-weight: 800;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| ACTION
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   ACTION BUTTON
+   ============================================================ */
 
 .table-actions-heading {
-    text-align:
-        right !important;
+    text-align: right !important;
 }
 
 .appointment-view-button {
     min-height: 34px;
-
-    padding:
-        0
-        10px;
+    padding: 0 10px;
 }
 
 .appointment-view-button svg {
     width: 12px;
     height: 12px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.9;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| LOADING
-|--------------------------------------------------------------------------
-*/
-
-.appointments-loading-state {
-    min-height: 280px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    flex-direction: column;
-
-    padding: 30px;
-
-    text-align: center;
-}
-
-.appointments-loading-icon {
-    width: 52px;
-    height: 52px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    margin-bottom: 11px;
-
-    border-radius: 15px;
-
-    background:
-        var(--sh-surface-muted);
-}
-
-.appointments-loading-icon
-.spinner {
-    margin: 0;
-}
-
-.appointments-loading-state h3 {
-    margin: 0;
-
-    color:
-        var(--sh-text);
-
-    font-size: 12px;
-    font-weight: 800;
-}
-
-.appointments-loading-state p {
-    max-width: 340px;
-
-    margin:
-        4px
-        0
-        0;
-
-    color:
-        var(--sh-text-3);
-
-    font-size: 9px;
-
-    line-height: 15px;
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| EMPTY
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
 
 .appointments-empty-state {
     min-height: 280px;
@@ -3658,129 +2388,66 @@ onMounted(() => {
     margin-top: 13px;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| PAGINATION
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   PAGINATION
+   ============================================================ */
 
 .appointments-pagination {
-    background:
-        #fbfcfd;
+    background: #fbfcfd;
 }
 
 .pagination-summary {
     display: flex;
     align-items: center;
-
     gap: 4px;
-
-    color:
-        var(--sh-text-3);
-
+    color: var(--sh-text-3);
     font-size: 9px;
 }
 
 .pagination-summary strong {
-    color:
-        var(--sh-text-2);
-
+    color: var(--sh-text-2);
     font-weight: 800;
 }
 
 .pagination-arrow {
     min-width: auto;
-
     gap: 5px;
 }
 
 .pagination-arrow svg {
     width: 12px;
     height: 12px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.9;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| REFRESH ANIMATION
-|--------------------------------------------------------------------------
-*/
-
-.spinning {
-    animation:
-        appointment-spin
-        0.8s
-        linear
-        infinite;
-}
-
-@keyframes appointment-spin {
-    to {
-        transform:
-            rotate(
-                360deg
-            );
-    }
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| RESPONSIVE
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
 
 @media (max-width: 1300px) {
     .appointment-summary-grid {
         grid-template-columns:
-            repeat(
-                3,
-                minmax(
-                    0,
-                    1fr
-                )
-            );
+            repeat(3, minmax(0, 1fr));
     }
 
     .appointments-filters {
         grid-template-columns:
-            repeat(
-                3,
-                minmax(
-                    0,
-                    1fr
-                )
-            );
+            repeat(3, minmax(0, 1fr));
     }
 
     .appointment-search {
-        grid-column:
-            span 2;
+        grid-column: span 2;
     }
 }
 
-
 @media (max-width: 1000px) {
     .appointments-intro {
-        align-items:
-            flex-start;
-
-        flex-direction:
-            column;
+        align-items: flex-start;
+        flex-direction: column;
     }
 
     .appointments-intro-actions {
@@ -3793,62 +2460,38 @@ onMounted(() => {
 
     .appointment-summary-grid {
         grid-template-columns:
-            repeat(
-                2,
-                minmax(
-                    0,
-                    1fr
-                )
-            );
+            repeat(2, minmax(0, 1fr));
     }
 
     .monitoring-banner {
-        align-items:
-            flex-start;
+        align-items: flex-start;
     }
 }
-
 
 @media (max-width: 760px) {
     .appointments-filters {
         grid-template-columns:
-            repeat(
-                2,
-                minmax(
-                    0,
-                    1fr
-                )
-            );
+            repeat(2, minmax(0, 1fr));
     }
 
     .appointment-search {
-        grid-column:
-            1
-            / -1;
+        grid-column: 1 / -1;
     }
 
     .appointments-filter-actions {
-        grid-column:
-            1
-            / -1;
+        grid-column: 1 / -1;
     }
 
     .appointments-table-header {
-        align-items:
-            flex-start;
-
-        flex-direction:
-            column;
+        align-items: flex-start;
+        flex-direction: column;
     }
 
     .table-header-actions {
         width: 100%;
-
-        justify-content:
-            space-between;
+        justify-content: space-between;
     }
 }
-
 
 @media (max-width: 680px) {
     .appointments-intro {
@@ -3860,11 +2503,8 @@ onMounted(() => {
     }
 
     .appointments-intro-actions {
-        align-items:
-            stretch;
-
-        flex-direction:
-            column;
+        align-items: stretch;
+        flex-direction: column;
     }
 
     .appointments-total-card,
@@ -3877,12 +2517,7 @@ onMounted(() => {
     }
 
     .monitoring-copy {
-        flex:
-            1
-            1
-            calc(
-                100% - 50px
-            );
+        flex: 1 1 calc(100% - 50px);
     }
 
     .monitoring-badge {
@@ -3890,64 +2525,46 @@ onMounted(() => {
     }
 
     .appointment-summary-grid {
-        grid-template-columns:
-            1fr;
+        grid-template-columns: 1fr;
     }
 
     .filter-card-heading {
-        align-items:
-            flex-start;
+        align-items: flex-start;
     }
 
     .filter-heading-left {
-        align-items:
-            flex-start;
+        align-items: flex-start;
     }
 
     .appointments-filters {
         display: flex;
-
-        align-items:
-            stretch;
-
-        flex-direction:
-            column;
-
+        align-items: stretch;
+        flex-direction: column;
         padding: 14px;
     }
 
     .appointments-filter-actions {
         width: 100%;
-
-        align-items:
-            stretch;
-
-        flex-direction:
-            column;
+        align-items: stretch;
+        flex-direction: column;
     }
 
-    .appointments-filter-actions
-    .primary-button,
-    .appointments-filter-actions
-    .secondary-button {
+    .appointments-filter-actions .primary-button,
+    .appointments-filter-actions .secondary-button {
         width: 100%;
     }
 
     .appointments-error {
-        align-items:
-            flex-start;
-
+        align-items: flex-start;
         flex-wrap: wrap;
     }
 
-    .appointments-error
-    .retry-button {
+    .appointments-error .retry-button {
         width: 100%;
     }
 
     .appointments-pagination {
-        align-items:
-            stretch;
+        align-items: stretch;
     }
 
     .pagination-summary {

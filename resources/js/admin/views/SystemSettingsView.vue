@@ -1,12 +1,22 @@
-
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue';
+import {
+    computed,
+    nextTick,
+    ref,
+} from 'vue';
+
 import { useRouter } from 'vue-router';
 import { apiRequest } from '../services/api';
 import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
 const auth = useAuthStore();
+
+/*
+|--------------------------------------------------------------------------
+| STATE
+|--------------------------------------------------------------------------
+*/
 
 const configuration = ref(null);
 const templates = ref([]);
@@ -16,9 +26,11 @@ const pageError = ref('');
 
 const textareaRefs = {};
 
-/* ==========================================================
-   TEMPLATE SUMMARY
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| TEMPLATE SUMMARY
+|--------------------------------------------------------------------------
+*/
 
 const hasTemplates = computed(
     () => templates.value.length > 0,
@@ -37,9 +49,11 @@ const invalidTemplateCount = computed(
         ).length,
 );
 
-/* ==========================================================
-   TEMPLATE HELPERS
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| TEMPLATE HELPERS
+|--------------------------------------------------------------------------
+*/
 
 function characterCount(value) {
     return [...String(value ?? '')].length;
@@ -50,8 +64,10 @@ function isDirty(template) {
 }
 
 function isTooLong(template) {
-    return characterCount(template.draft) >
-        Number(template.max_characters ?? 320);
+    return (
+        characterCount(template.draft) >
+        Number(template.max_characters ?? 320)
+    );
 }
 
 function canSave(template) {
@@ -64,9 +80,14 @@ function canSave(template) {
 }
 
 function characterPercentage(template) {
-    const maximum = Number(template.max_characters ?? 320);
+    const maximum = Number(
+        template.max_characters ?? 320,
+    );
 
-    if (!Number.isFinite(maximum) || maximum <= 0) {
+    if (
+        !Number.isFinite(maximum) ||
+        maximum <= 0
+    ) {
         return 0;
     }
 
@@ -99,9 +120,11 @@ function normalizeTemplate(template) {
     };
 }
 
-/* ==========================================================
-   FORMATTERS
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| FORMATTERS
+|--------------------------------------------------------------------------
+*/
 
 function humanize(value) {
     if (!value) {
@@ -110,8 +133,9 @@ function humanize(value) {
 
     return String(value)
         .replaceAll('_', ' ')
-        .replace(/\b\w/g, (character) =>
-            character.toUpperCase(),
+        .replace(
+            /\b\w/g,
+            (character) => character.toUpperCase(),
         );
 }
 
@@ -144,13 +168,19 @@ function minutesLabel(value) {
         return '1 hour';
     }
 
-    if (minutes > 0 && minutes % 1440 === 0) {
+    if (
+        minutes > 0 &&
+        minutes % 1440 === 0
+    ) {
         const days = minutes / 1440;
 
         return `${days} ${days === 1 ? 'day' : 'days'}`;
     }
 
-    if (minutes > 0 && minutes % 60 === 0) {
+    if (
+        minutes > 0 &&
+        minutes % 60 === 0
+    ) {
         const hours = minutes / 60;
 
         return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
@@ -180,12 +210,11 @@ function formatDateTime(value) {
     }).format(date);
 }
 
-/* ==========================================================
-   CONFIGURATION CARDS
-
-   These fields match the updated Laravel
-   AdminSystemSettingsService.php from Step 5.
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| CONFIGURATION CARDS
+|--------------------------------------------------------------------------
+*/
 
 const configurationCards = computed(() => {
     if (!configuration.value) {
@@ -238,7 +267,9 @@ const configurationCards = computed(() => {
         {
             key: 'live_test',
             title: 'Live SMS Test',
-            value: statusLabel(settings.live_test_enabled),
+            value: statusLabel(
+                settings.live_test_enabled,
+            ),
             description: 'Controlled provider test setting',
             state: settings.live_test_enabled
                 ? 'success'
@@ -268,9 +299,11 @@ const configurationCards = computed(() => {
     ];
 });
 
-/* ==========================================================
-   AUTHENTICATION
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| AUTHENTICATION
+|--------------------------------------------------------------------------
+*/
 
 async function authenticationFailure() {
     auth.clearSession();
@@ -280,9 +313,15 @@ async function authenticationFailure() {
     });
 }
 
-/* ==========================================================
-   LOAD SYSTEM SETTINGS
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| LOAD SYSTEM SETTINGS
+|--------------------------------------------------------------------------
+|
+| The initial request is awaited before this page appears.
+| Refreshing does not remove the existing page content.
+|
+*/
 
 async function loadSettings() {
     if (!auth.token) {
@@ -320,7 +359,8 @@ async function loadSettings() {
             normalizeTemplate,
         );
 
-        generatedAt.value = response?.generated_at ?? null;
+        generatedAt.value =
+            response?.generated_at ?? null;
     } catch (error) {
         if (
             error?.status === 401 ||
@@ -339,17 +379,27 @@ async function loadSettings() {
     }
 }
 
-/* ==========================================================
-   INSERT ALLOWED PLACEHOLDER
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| INSERT ALLOWED PLACEHOLDER
+|--------------------------------------------------------------------------
+*/
 
-async function insertPlaceholder(template, placeholder) {
+async function insertPlaceholder(
+    template,
+    placeholder,
+) {
     const textarea = textareaRefs[template.type];
 
-    const current = String(template.draft ?? '');
+    const current = String(
+        template.draft ?? '',
+    );
 
-    const start = textarea?.selectionStart ?? current.length;
-    const end = textarea?.selectionEnd ?? start;
+    const start =
+        textarea?.selectionStart ?? current.length;
+
+    const end =
+        textarea?.selectionEnd ?? start;
 
     template.draft =
         current.slice(0, start) +
@@ -360,7 +410,8 @@ async function insertPlaceholder(template, placeholder) {
 
     await nextTick();
 
-    const updatedTextarea = textareaRefs[template.type];
+    const updatedTextarea =
+        textareaRefs[template.type];
 
     if (!updatedTextarea) {
         return;
@@ -369,21 +420,30 @@ async function insertPlaceholder(template, placeholder) {
     const cursor = start + placeholder.length;
 
     updatedTextarea.focus();
-    updatedTextarea.setSelectionRange(cursor, cursor);
+
+    updatedTextarea.setSelectionRange(
+        cursor,
+        cursor,
+    );
 }
 
-/* ==========================================================
-   UNDO TEMPLATE
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| UNDO TEMPLATE
+|--------------------------------------------------------------------------
+*/
 
 function undoTemplate(template) {
     template.draft = template.template;
+
     clearTemplateMessage(template);
 }
 
-/* ==========================================================
-   SAVE TEMPLATE
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| SAVE TEMPLATE
+|--------------------------------------------------------------------------
+*/
 
 async function saveTemplate(template) {
     if (!canSave(template)) {
@@ -460,13 +520,20 @@ async function saveTemplate(template) {
     }
 }
 
-/* ==========================================================
-   INITIAL LOAD
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| INITIAL DATA LOADING
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+| The AdminLayout.vue Suspense wrapper waits for this.
+|
+| This replaces onMounted so the page appears after
+| its initial configuration request has completed.
+|
+*/
 
-onMounted(() => {
-    void loadSettings();
-});
+await loadSettings();
 </script>
 
 <template>
@@ -478,9 +545,9 @@ onMounted(() => {
 
         <section class="settings-intro">
             <div class="settings-intro-copy">
-                
-
-                <h2>System Settings</h2>
+                <h2>
+                    System Settings
+                </h2>
 
                 <p>
                     Review StyleHub's secure SMS configuration
@@ -495,14 +562,19 @@ onMounted(() => {
                     class="settings-loaded-card"
                 >
                     <div class="settings-loaded-icon">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
                             <circle cx="12" cy="12" r="9" />
                             <path d="M12 7v5l3 2" />
                         </svg>
                     </div>
 
                     <div>
-                        <span>Configuration Loaded</span>
+                        <span>
+                            Configuration Loaded
+                        </span>
 
                         <strong>
                             {{ formatDateTime(generatedAt) }}
@@ -519,49 +591,14 @@ onMounted(() => {
                     <svg
                         viewBox="0 0 24 24"
                         aria-hidden="true"
-                        :class="{ spinning: isLoading }"
                     >
                         <path d="M20 11a8 8 0 10-2.3 5.7" />
                         <path d="M20 5v6h-6" />
                     </svg>
 
-                    {{ isLoading ? 'Refreshing...' : 'Refresh' }}
+                    Refresh
                 </button>
             </div>
-        </section>
-
-        <!-- ==================================================
-             SECURITY NOTICE
-             ================================================== -->
-
-        <section class="security-banner">
-            <div class="security-banner-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path
-                        d="M12 3l8 4v5c0 5-3.4 8.2-8 9.5C7.4 20.2 4 17 4 12V7l8-4z"
-                    />
-                    <path d="M9 12l2 2 4-4" />
-                </svg>
-            </div>
-
-            <div class="security-banner-copy">
-                <strong>
-                    TextBee credentials are protected
-                </strong>
-
-                <p>
-                    StyleHub stores its TextBee API key,
-                    Android device ID, and provider endpoint
-                    on the Laravel server. This page displays
-                    configuration indicators only. Actual
-                    credentials and device identifiers are
-                    never returned to the Administrator browser.
-                </p>
-            </div>
-
-            <span class="security-badge">
-                Protected
-            </span>
         </section>
 
         <!-- ==================================================
@@ -574,15 +611,23 @@ onMounted(() => {
             role="alert"
         >
             <div class="settings-error-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
                     <circle cx="12" cy="12" r="9" />
                     <path d="M12 8v5M12 17h.01" />
                 </svg>
             </div>
 
             <div class="settings-error-copy">
-                <strong>Unable to Load System Settings</strong>
-                <p>{{ pageError }}</p>
+                <strong>
+                    Unable to Load System Settings
+                </strong>
+
+                <p>
+                    {{ pageError }}
+                </p>
             </div>
 
             <button
@@ -596,34 +641,22 @@ onMounted(() => {
         </div>
 
         <!-- ==================================================
-             LOADING
-             ================================================== -->
-
-        <section
-            v-if="isLoading && !configuration"
-            class="loading-card settings-loading-card"
-        >
-            <div class="settings-spinner"></div>
-
-            <h3>Loading System Configuration</h3>
-
-            <p>
-                Retrieving operational SMS settings
-                and customer message templates.
-            </p>
-        </section>
-
-        <!-- ==================================================
              CONFIGURATION
              ================================================== -->
 
-        <template v-else-if="configuration">
+        <template v-if="configuration">
+
+            <!-- CONFIGURATION HEADING -->
 
             <section class="settings-section-heading">
                 <div>
-                    <p class="eyebrow">SMS OPERATIONS</p>
+                    <p class="eyebrow">
+                        SMS OPERATIONS
+                    </p>
 
-                    <h3>Configuration Status</h3>
+                    <h3>
+                        Configuration Status
+                    </h3>
 
                     <p>
                         These settings are provided by your
@@ -674,6 +707,7 @@ onMounted(() => {
                                 height="16"
                                 rx="2"
                             />
+
                             <path d="M8 8h8M8 12h8M8 16h5" />
                         </svg>
 
@@ -702,6 +736,7 @@ onMounted(() => {
                                 height="20"
                                 rx="2"
                             />
+
                             <path d="M11 18h2" />
                         </svg>
 
@@ -715,6 +750,7 @@ onMounted(() => {
                             <path
                                 d="M12 3l8 4v5c0 5-3.4 8.2-8 9.5C7.4 20.2 4 17 4 12V7l8-4z"
                             />
+
                             <path d="M9 12l2 2 4-4" />
                         </svg>
 
@@ -731,7 +767,9 @@ onMounted(() => {
                     </div>
 
                     <div class="configuration-card-copy">
-                        <span>{{ card.title }}</span>
+                        <span>
+                            {{ card.title }}
+                        </span>
 
                         <strong
                             :class="{
@@ -744,36 +782,11 @@ onMounted(() => {
                             {{ card.value }}
                         </strong>
 
-                        <small>{{ card.description }}</small>
+                        <small>
+                            {{ card.description }}
+                        </small>
                     </div>
                 </article>
-            </section>
-
-            <!-- CONFIGURATION EXPLANATION -->
-
-            <section class="configuration-information">
-                <div class="configuration-information-icon">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <circle cx="12" cy="12" r="9" />
-                        <path d="M12 11v5M12 8h.01" />
-                    </svg>
-                </div>
-
-                <div>
-                    <strong>
-                        TextBee configuration is server-managed
-                    </strong>
-
-                    <p>
-                        The API key and device indicators confirm
-                        only that values are configured; they do
-                        not prove that your Android gateway is
-                        currently connected or can deliver SMS.
-                        Credentials, gateway settings, and reminder
-                        timing must be updated securely on the
-                        Laravel server.
-                    </p>
-                </div>
             </section>
 
             <!-- ==================================================
@@ -782,9 +795,13 @@ onMounted(() => {
 
             <section class="settings-section-heading templates-heading">
                 <div>
-                    <p class="eyebrow">SMS TEMPLATES</p>
+                    <p class="eyebrow">
+                        SMS TEMPLATES
+                    </p>
 
-                    <h3>Customer Message Templates</h3>
+                    <h3>
+                        Customer Message Templates
+                    </h3>
 
                     <p>
                         Edit the approved message templates used
@@ -794,8 +811,13 @@ onMounted(() => {
 
                 <div class="template-summary">
                     <div class="template-summary-item">
-                        <span>Templates</span>
-                        <strong>{{ templates.length }}</strong>
+                        <span>
+                            Templates
+                        </span>
+
+                        <strong>
+                            {{ templates.length }}
+                        </strong>
                     </div>
 
                     <div
@@ -804,8 +826,13 @@ onMounted(() => {
                             changed: modifiedTemplateCount > 0,
                         }"
                     >
-                        <span>Unsaved</span>
-                        <strong>{{ modifiedTemplateCount }}</strong>
+                        <span>
+                            Unsaved
+                        </span>
+
+                        <strong>
+                            {{ modifiedTemplateCount }}
+                        </strong>
                     </div>
 
                     <div
@@ -814,39 +841,15 @@ onMounted(() => {
                             invalid: invalidTemplateCount > 0,
                         }"
                     >
-                        <span>Invalid</span>
-                        <strong>{{ invalidTemplateCount }}</strong>
+                        <span>
+                            Invalid
+                        </span>
+
+                        <strong>
+                            {{ invalidTemplateCount }}
+                        </strong>
                     </div>
                 </div>
-            </section>
-
-            <!-- TEMPLATE SAFETY NOTICE -->
-
-            <section class="snapshot-banner">
-                <div class="snapshot-banner-icon">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M6 3h9l3 3v15H6V3z" />
-                        <path d="M14 3v4h4" />
-                        <path d="M9 11h6M9 15h6" />
-                    </svg>
-                </div>
-
-                <div class="snapshot-banner-copy">
-                    <strong>
-                        Template changes affect future SMS only
-                    </strong>
-
-                    <p>
-                        Notifications already queued retain their
-                        original message snapshot. A controlled
-                        retry uses the same original message,
-                        not a newly edited template.
-                    </p>
-                </div>
-
-                <span class="snapshot-badge">
-                    Snapshot Safe
-                </span>
             </section>
 
             <!-- ==================================================
@@ -858,13 +861,18 @@ onMounted(() => {
                 class="empty-state templates-empty-state"
             >
                 <div class="empty-icon">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
                         <path d="M4 5h16v12H9l-5 4V5z" />
                         <path d="M8 9h8M8 13h5" />
                     </svg>
                 </div>
 
-                <h3>No Editable Templates</h3>
+                <h3>
+                    No Editable Templates
+                </h3>
 
                 <p>
                     No customer-facing SMS templates are
@@ -876,7 +884,10 @@ onMounted(() => {
                  TEMPLATE LIST
                  ================================================== -->
 
-            <section v-else class="templates-list">
+            <section
+                v-else
+                class="templates-list"
+            >
                 <article
                     v-for="(template, index) in templates"
                     :key="template.type"
@@ -888,19 +899,29 @@ onMounted(() => {
                             template.draft.trim() === '',
                     }"
                 >
+
                     <!-- TEMPLATE HEADER -->
 
                     <div class="template-header">
                         <div class="template-heading-main">
                             <div class="template-number">
-                                {{ String(index + 1).padStart(2, '0') }}
+                                {{
+                                    String(index + 1).padStart(
+                                        2,
+                                        '0'
+                                    )
+                                }}
                             </div>
 
                             <div class="template-heading-copy">
                                 <div class="template-title-row">
-                                    <h4>{{ template.label }}</h4>
+                                    <h4>
+                                        {{ template.label }}
+                                    </h4>
 
-                                    <code>{{ template.type }}</code>
+                                    <code>
+                                        {{ template.type }}
+                                    </code>
 
                                     <span
                                         v-if="isDirty(template)"
@@ -910,12 +931,16 @@ onMounted(() => {
                                     </span>
                                 </div>
 
-                                <p>{{ template.description }}</p>
+                                <p>
+                                    {{ template.description }}
+                                </p>
                             </div>
                         </div>
 
                         <div class="template-meta">
-                            <span>Last Edited</span>
+                            <span>
+                                Last Edited
+                            </span>
 
                             <strong>
                                 {{
@@ -932,11 +957,15 @@ onMounted(() => {
                                 #{{ template.updated_by_admin_id }}
                             </small>
 
-                            <small v-else>Default Template</small>
+                            <small v-else>
+                                Default Template
+                            </small>
                         </div>
                     </div>
 
-                    <!-- PLACEHOLDERS -->
+                    <!-- ==================================================
+                         PLACEHOLDERS
+                         ================================================== -->
 
                     <div class="placeholder-section">
                         <div class="placeholder-heading">
@@ -982,9 +1011,11 @@ onMounted(() => {
                                     <path
                                         d="M8 4H5a2 2 0 00-2 2v12a2 2 0 002 2h3"
                                     />
+
                                     <path
                                         d="M16 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3"
                                     />
+
                                     <path d="M9 12h6" />
                                 </svg>
 
@@ -993,7 +1024,9 @@ onMounted(() => {
                         </div>
                     </div>
 
-                    <!-- TEMPLATE EDITOR -->
+                    <!-- ==================================================
+                         TEMPLATE EDITOR
+                         ================================================== -->
 
                     <label class="template-editor">
                         <div class="editor-heading">
@@ -1067,7 +1100,9 @@ onMounted(() => {
                         </div>
                     </label>
 
-                    <!-- VALIDATION -->
+                    <!-- ==================================================
+                         VALIDATION
+                         ================================================== -->
 
                     <div
                         v-if="template.draft.trim() === ''"
@@ -1091,8 +1126,13 @@ onMounted(() => {
                         class="template-message error"
                         role="alert"
                     >
-                        <strong>Template Not Saved</strong>
-                        <span>{{ template.error }}</span>
+                        <strong>
+                            Template Not Saved
+                        </strong>
+
+                        <span>
+                            {{ template.error }}
+                        </span>
                     </div>
 
                     <!-- SUCCESS MESSAGE -->
@@ -1102,11 +1142,18 @@ onMounted(() => {
                         class="template-message success"
                         role="status"
                     >
-                        <strong>Template Saved</strong>
-                        <span>{{ template.success }}</span>
+                        <strong>
+                            Template Saved
+                        </strong>
+
+                        <span>
+                            {{ template.success }}
+                        </span>
                     </div>
 
-                    <!-- FOOTER -->
+                    <!-- ==================================================
+                         TEMPLATE FOOTER
+                         ================================================== -->
 
                     <div class="template-footer">
                         <div class="template-footer-note">
@@ -1176,9 +1223,11 @@ onMounted(() => {
 <style scoped src="./admin-page.css"></style>
 
 <style scoped>
-/* ==========================================================
-   PAGE ROOT
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| PAGE ROOT
+|--------------------------------------------------------------------------
+*/
 
 .settings-page {
     display: flex;
@@ -1186,9 +1235,11 @@ onMounted(() => {
     gap: 14px;
 }
 
-/* ==========================================================
-   PAGE HEADER
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| PAGE HEADER
+|--------------------------------------------------------------------------
+*/
 
 .settings-intro {
     min-height: 138px;
@@ -1205,7 +1256,11 @@ onMounted(() => {
             rgba(214, 154, 45, 0.08),
             transparent 28%
         ),
-        linear-gradient(145deg, #ffffff, #fbfcfd);
+        linear-gradient(
+            145deg,
+            #ffffff,
+            #fbfcfd
+        );
     box-shadow: var(--sh-shadow-sm);
 }
 
@@ -1256,9 +1311,11 @@ onMounted(() => {
     gap: 10px;
 }
 
-/* ==========================================================
-   CONFIGURATION LOADED CARD
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| CONFIGURATION LOADED CARD
+|--------------------------------------------------------------------------
+*/
 
 .settings-loaded-card {
     min-width: 215px;
@@ -1316,9 +1373,11 @@ onMounted(() => {
     gap: 7px;
 }
 
-/* ==========================================================
-   SECURITY BANNER
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| SECURITY BANNER
+|--------------------------------------------------------------------------
+*/
 
 .security-banner {
     display: flex;
@@ -1387,9 +1446,11 @@ onMounted(() => {
     text-transform: uppercase;
 }
 
-/* ==========================================================
-   LOADING AND ERROR
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| ERROR MESSAGE
+|--------------------------------------------------------------------------
+*/
 
 .settings-error {
     display: flex;
@@ -1430,38 +1491,11 @@ onMounted(() => {
     margin: 4px 0 0;
 }
 
-.settings-loading-card {
-    min-height: 250px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-.settings-loading-card h3 {
-    margin: 0;
-    font-size: 14px;
-}
-
-.settings-loading-card p {
-    margin: 0;
-    color: var(--sh-text-3);
-    font-size: 11px;
-}
-
-.settings-spinner {
-    width: 28px;
-    height: 28px;
-    border: 3px solid var(--sh-border);
-    border-top-color: var(--sh-accent);
-    border-radius: 50%;
-    animation: settings-spin .8s linear infinite;
-}
-
-/* ==========================================================
-   SECTION HEADING
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| SECTION HEADING
+|--------------------------------------------------------------------------
+*/
 
 .settings-section-heading {
     display: flex;
@@ -1497,9 +1531,11 @@ onMounted(() => {
     text-transform: uppercase;
 }
 
-/* ==========================================================
-   CONFIGURATION GRID
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| CONFIGURATION GRID
+|--------------------------------------------------------------------------
+*/
 
 .configuration-grid {
     display: grid;
@@ -1600,9 +1636,11 @@ onMounted(() => {
     line-height: 14px;
 }
 
-/* ==========================================================
-   CONFIGURATION INFORMATION
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| CONFIGURATION INFORMATION
+|--------------------------------------------------------------------------
+*/
 
 .configuration-information {
     display: flex;
@@ -1637,9 +1675,11 @@ onMounted(() => {
     line-height: 16px;
 }
 
-/* ==========================================================
-   TEMPLATE HEADING AND SUMMARY
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| TEMPLATE HEADING AND SUMMARY
+|--------------------------------------------------------------------------
+*/
 
 .templates-heading {
     margin-top: 22px;
@@ -1683,9 +1723,11 @@ onMounted(() => {
     border-color: #eed3d3;
 }
 
-/* ==========================================================
-   SNAPSHOT INFORMATION
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| SNAPSHOT INFORMATION
+|--------------------------------------------------------------------------
+*/
 
 .snapshot-banner {
     display: flex;
@@ -1746,9 +1788,11 @@ onMounted(() => {
     white-space: nowrap;
 }
 
-/* ==========================================================
-   TEMPLATE LIST
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| TEMPLATE LIST
+|--------------------------------------------------------------------------
+*/
 
 .templates-list {
     display: flex;
@@ -1870,9 +1914,11 @@ onMounted(() => {
     font-size: 9px;
 }
 
-/* ==========================================================
-   PLACEHOLDERS
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| PLACEHOLDERS
+|--------------------------------------------------------------------------
+*/
 
 .placeholder-section {
     padding: 15px 16px 0;
@@ -1947,9 +1993,11 @@ onMounted(() => {
     stroke-width: 1.8;
 }
 
-/* ==========================================================
-   TEMPLATE EDITOR
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| TEMPLATE EDITOR
+|--------------------------------------------------------------------------
+*/
 
 .template-editor {
     display: block;
@@ -2021,7 +2069,7 @@ onMounted(() => {
     height: 100%;
     border-radius: inherit;
     background: var(--sh-success);
-    transition: width .15s ease;
+    transition: width 0.15s ease;
 }
 
 .character-progress-fill.warning {
@@ -2032,9 +2080,11 @@ onMounted(() => {
     background: var(--sh-danger);
 }
 
-/* ==========================================================
-   TEMPLATE VALIDATION / MESSAGES
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| TEMPLATE VALIDATION AND MESSAGES
+|--------------------------------------------------------------------------
+*/
 
 .template-validation-warning {
     margin: 11px 16px 0;
@@ -2076,9 +2126,11 @@ onMounted(() => {
     font-size: 10px;
 }
 
-/* ==========================================================
-   TEMPLATE FOOTER
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| TEMPLATE FOOTER
+|--------------------------------------------------------------------------
+*/
 
 .template-footer {
     display: flex;
@@ -2144,11 +2196,7 @@ onMounted(() => {
     border: 2px solid currentColor;
     border-right-color: transparent;
     border-radius: 50%;
-    animation: settings-spin .7s linear infinite;
-}
-
-.spinning {
-    animation: settings-spin .8s linear infinite;
+    animation: settings-spin 0.7s linear infinite;
 }
 
 @keyframes settings-spin {
@@ -2157,9 +2205,11 @@ onMounted(() => {
     }
 }
 
-/* ==========================================================
-   RESPONSIVE LAYOUT
-   ========================================================== */
+/*
+|--------------------------------------------------------------------------
+| RESPONSIVE LAYOUT
+|--------------------------------------------------------------------------
+*/
 
 @media (max-width: 1100px) {
     .settings-intro {
@@ -2176,7 +2226,10 @@ onMounted(() => {
     }
 
     .configuration-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(
+            2,
+            minmax(0, 1fr)
+        );
     }
 }
 

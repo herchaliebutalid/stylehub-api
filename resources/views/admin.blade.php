@@ -1,7 +1,9 @@
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
 
     <meta
@@ -16,27 +18,46 @@
 
     <title>StyleHub Administrator</title>
 
-    <!-- Official StyleHub Mobile App Icon -->
+    <!--
+    |--------------------------------------------------------------------------
+    | STYLEHUB OFFICIAL ROUNDED FAVICON
+    |--------------------------------------------------------------------------
+    |
+    | Uses the permanent rounded PNG icon.
+    |
+    | Features:
+    |
+    | - Equal corner radius
+    | - Transparent corners
+    | - Original StyleHub branding
+    | - No JavaScript favicon generation
+    |
+    -->
+
     <link
         rel="icon"
         type="image/png"
-        sizes="any"
-        href="{{ asset('stylehub-icon.png') }}?v=2"
+        sizes="256x256"
+        href="{{ asset('stylehub-favicon-rounded.png') }}?v=5"
     >
 
-    <link
-        rel="shortcut icon"
-        type="image/png"
-        href="{{ asset('stylehub-icon.png') }}?v=2"
-    >
+    <!--
+    |--------------------------------------------------------------------------
+    | STYLEHUB APPLICATION ASSETS
+    |--------------------------------------------------------------------------
+    -->
 
     @vite([
         'resources/css/app.css',
         'resources/js/app.js',
     ])
+
 </head>
 
 <body>
+
     <div id="app"></div>
+
 </body>
+
 </html>

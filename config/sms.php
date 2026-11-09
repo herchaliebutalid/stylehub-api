@@ -4,50 +4,50 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Normal StyleHub SMS Master Switch
+    | StyleHub SMS Master Switch
     |--------------------------------------------------------------------------
     |
-    | When false, normal appointment and reminder SMS notifications
-    | will not be sent.
+    | Set SMS_ENABLED=true in your .env or Railway variables
+    | to enable normal appointment-related SMS notifications.
     |
-    | Keep this false while we are integrating and testing TextBee.
+    | These include:
+    | - Booking received
+    | - Appointment confirmed
+    | - Appointment declined
+    | - Appointment cancelled
+    | - Reschedule approved
+    | - Reschedule rejected
+    | - Appointment reminder
+    |
+    | Registration verification and password recovery OTPs
+    | use the TextBee gateway directly.
+    |
+    | Keep the default false to prevent accidental SMS sending
+    | when SMS_ENABLED has not been configured.
     |
     */
 
-    'enabled' =>
-        env(
-            'SMS_ENABLED',
-            false
-        ),
+    'enabled' => env('SMS_ENABLED', false),
 
     /*
     |--------------------------------------------------------------------------
-    | Controlled Live Test
+    | Controlled Live SMS Testing
     |--------------------------------------------------------------------------
     |
-    | This is separate from SMS_ENABLED.
-    |
-    | It allows us to test one real TextBee SMS without enabling
-    | all appointment notifications and reminders at the same time.
+    | Allows testing TextBee independently from normal
+    | appointment notifications.
     |
     */
 
     'live_test' => [
 
-        'enabled' =>
-            env(
-                'SMS_LIVE_TEST_ENABLED',
-                false
-            ),
+        'enabled' => env('SMS_LIVE_TEST_ENABLED', false),
 
-        /*
-         * Prevent accidental repeated test messages.
-         */
-        'cooldown_minutes' =>
-            (int) env(
-                'SMS_LIVE_TEST_COOLDOWN_MINUTES',
-                10
-            ),
+        'cooldown_minutes' => (int) env(
+            'SMS_LIVE_TEST_COOLDOWN_MINUTES',
+            10
+        ),
+
     ],
 
     /*
@@ -56,18 +56,19 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'provider' =>
-        'textbee',
+    'provider' => 'textbee',
 
     /*
     |--------------------------------------------------------------------------
-    | TextBee SMS Gateway
+    | TextBee SMS Gateway Configuration
     |--------------------------------------------------------------------------
     |
-    | StyleHub communicates with the TextBee REST API.
+    | TextBee uses your registered Android phone as an
+    | SMS gateway.
     |
-    | TextBee then sends the request to our registered Android
-    | gateway phone, and the phone sends the SMS through its SIM.
+    | The Laravel backend sends an API request to TextBee.
+    | TextBee forwards the request to your registered phone.
+    | Your phone sends the actual SMS through its SIM.
     |
     */
 
@@ -75,48 +76,38 @@ return [
 
         /*
         |--------------------------------------------------------------------------
-        | API Endpoint
+        | TextBee API Endpoint
         |--------------------------------------------------------------------------
         */
 
-        'endpoint' =>
-            env(
-                'TEXTBEE_ENDPOINT',
-                'https://api.textbee.dev/api/v1/gateway/send-sms'
-            ),
+        'endpoint' => env(
+            'TEXTBEE_ENDPOINT',
+            'https://api.textbee.dev/api/v1/gateway/send-sms'
+        ),
 
         /*
         |--------------------------------------------------------------------------
-        | API Key
+        | TextBee API Key
         |--------------------------------------------------------------------------
         |
-        | Never put this key inside the React Native / Expo project.
-        | It belongs only in the Laravel backend environment.
+        | Store this in the backend environment only.
+        | Never expose it in React Native or Expo.
         |
         */
 
-        'api_key' =>
-            env(
-                'TEXTBEE_API_KEY'
-            ),
+        'api_key' => env('TEXTBEE_API_KEY'),
 
         /*
         |--------------------------------------------------------------------------
-        | Gateway Device
+        | Registered Android Device ID
         |--------------------------------------------------------------------------
         |
-        | This is the Device ID shown for the registered OPPO phone
-        | in the TextBee dashboard.
-        |
-        | Supplying the ID ensures that StyleHub uses this exact
-        | Android phone as its SMS gateway.
+        | This identifies the Android phone registered
+        | in your TextBee account.
         |
         */
 
-        'device_id' =>
-            env(
-                'TEXTBEE_DEVICE_ID'
-            ),
+        'device_id' => env('TEXTBEE_DEVICE_ID'),
 
         /*
         |--------------------------------------------------------------------------
@@ -124,11 +115,10 @@ return [
         |--------------------------------------------------------------------------
         */
 
-        'connect_timeout' =>
-            (int) env(
-                'TEXTBEE_CONNECT_TIMEOUT',
-                5
-            ),
+        'connect_timeout' => (int) env(
+            'TEXTBEE_CONNECT_TIMEOUT',
+            5
+        ),
 
         /*
         |--------------------------------------------------------------------------
@@ -136,68 +126,68 @@ return [
         |--------------------------------------------------------------------------
         */
 
-        'timeout' =>
-            (int) env(
-                'TEXTBEE_TIMEOUT',
-                15
-            ),
+        'timeout' => (int) env(
+            'TEXTBEE_TIMEOUT',
+            15
+        ),
+
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Appointment Reminder
+    | Automatic Appointment Reminders
     |--------------------------------------------------------------------------
     |
-    | 1440 minutes = 24 hours.
+    | Default reminder time:
+    | 1440 minutes = 24 hours before the appointment.
     |
-    | StyleHub will normally prepare an appointment reminder
-    | approximately 24 hours before the appointment.
+    | Minimum remaining time:
+    | 60 minutes = 1 hour.
+    |
+    | Reminders are sent only for eligible confirmed
+    | appointments when the Laravel scheduler is running.
     |
     */
 
     'reminders' => [
 
-        'lead_minutes' =>
-            (int) env(
-                'SMS_REMINDER_LEAD_MINUTES',
-                1440
-            ),
+        'lead_minutes' => (int) env(
+            'SMS_REMINDER_LEAD_MINUTES',
+            1440
+        ),
 
-        /*
-         * Avoid creating a reminder when the appointment is already
-         * too close to its scheduled time.
-         *
-         * 60 minutes = 1 hour.
-         */
-        'minimum_lead_minutes' =>
-            (int) env(
-                'SMS_REMINDER_MINIMUM_LEAD_MINUTES',
-                60
-            ),
+        'minimum_lead_minutes' => (int) env(
+            'SMS_REMINDER_MINIMUM_LEAD_MINUTES',
+            60
+        ),
+
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Queue Recovery
+    | SMS Queue Recovery
     |--------------------------------------------------------------------------
     |
-    | These values are used by StyleHub's existing SMS recovery
-    | mechanism when queued notifications become stuck.
+    | Helps recover pending SMS notifications when
+    | a queue worker is interrupted.
+    |
+    | Processing messages with uncertain delivery
+    | must not be automatically resent.
     |
     */
 
     'recovery' => [
 
-        'pending_after_minutes' =>
-            (int) env(
-                'SMS_PENDING_RECOVERY_MINUTES',
-                5
-            ),
+        'pending_after_minutes' => (int) env(
+            'SMS_PENDING_RECOVERY_MINUTES',
+            5
+        ),
 
-        'processing_after_minutes' =>
-            (int) env(
-                'SMS_PROCESSING_RECOVERY_MINUTES',
-                10
-            ),
+        'processing_after_minutes' => (int) env(
+            'SMS_PROCESSING_RECOVERY_MINUTES',
+            10
+        ),
+
     ],
+
 ];

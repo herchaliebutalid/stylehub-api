@@ -1,0 +1,1009 @@
+/*
+ * STYLEHUB ADMIN — REPORTS
+ * Layout and typography only. Report generation, date filtering, statistics,
+ * detail navigation and all API-backed data stay in ReportsView.vue.
+ * Reuses the existing StyleHub theme tokens and status colors.
+ */
+
+/* Overview and reporting period */
+#app .reports-page {
+    gap: 24px;
+}
+
+#app .reports-page .reports-intro {
+    min-height: 0;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+#app .reports-page .reports-intro h2 {
+    margin: 0;
+    color: var(--sh-text);
+    font-size: clamp(27px, 2.5vw, 33px);
+    font-weight: 750;
+    line-height: 1.2;
+    letter-spacing: -0.9px;
+}
+
+#app .reports-page .reports-intro p {
+    max-width: 720px;
+    margin: 8px 0 0;
+    color: var(--sh-text-3);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+#app .reports-page .reports-intro-right {
+    gap: 7px;
+    align-items: flex-end;
+}
+
+#app .reports-page .report-period-display {
+    min-width: 225px;
+    gap: 12px;
+    padding: 10px 13px;
+    border: 1px solid var(--sh-border);
+    border-radius: 11px;
+    background: var(--sh-surface);
+}
+
+#app .reports-page .report-period-icon {
+    width: 39px;
+    height: 39px;
+    flex: 0 0 39px;
+    border-radius: 10px;
+}
+
+#app .reports-page .report-period-display span {
+    color: var(--sh-text-3);
+    font-size: 11px;
+    font-weight: 650;
+}
+
+#app .reports-page .report-period-display strong {
+    color: var(--sh-text);
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 750;
+}
+
+#app .reports-page .generated-information {
+    gap: 6px;
+    color: var(--sh-text-3);
+    font-size: 11px;
+}
+
+#app .reports-page .generated-information strong {
+    color: var(--sh-text-2);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* Generate report */
+#app .reports-page .reports-period-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 0;
+    padding: 21px;
+    border: 1px solid var(--sh-border);
+    border-radius: var(--sh-radius-lg);
+    background: var(--sh-surface);
+    box-shadow: var(--sh-shadow-sm);
+}
+
+#app .reports-page .period-card-heading {
+    min-width: 225px;
+    gap: 12px;
+}
+
+#app .reports-page .period-heading-icon {
+    width: 43px;
+    height: 43px;
+    flex: 0 0 43px;
+    border-radius: 11px;
+}
+
+#app .reports-page .period-card-heading .eyebrow,
+#app .reports-page .report-section-heading .eyebrow,
+#app .reports-page .report-heading-main .eyebrow {
+    margin: 0 0 6px;
+    color: var(--sh-text-3);
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: 0.07em;
+    line-height: 1.4;
+}
+
+#app .reports-page .period-card-heading h3 {
+    margin: 0;
+    color: var(--sh-text);
+    font-size: 16px;
+    font-weight: 750;
+    line-height: 1.35;
+}
+
+#app .reports-page .period-card-heading p:last-child {
+    margin: 5px 0 0;
+    color: var(--sh-text-3);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+#app .reports-page .reports-period-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 12px;
+    margin: 0;
+}
+
+#app .reports-page .period-field {
+    gap: 7px;
+}
+
+#app .reports-page .period-field > span {
+    margin: 0;
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+#app .reports-page .period-field input {
+    width: 165px;
+    min-height: 43px;
+    border: 1px solid var(--sh-border-strong);
+    border-radius: 10px;
+    background: var(--sh-surface);
+    color: var(--sh-text);
+    font-size: 12px;
+}
+
+#app .reports-page .period-field input:focus {
+    border-color: var(--sh-accent);
+    outline: 2px solid var(--sh-accent-soft);
+    outline-offset: 0;
+}
+
+#app .reports-page .reports-period-filters button {
+    min-height: 43px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* Scope and loading/error notices */
+#app .reports-page .report-scope-note {
+    align-items: center;
+    gap: 13px;
+    padding: 15px 18px;
+    border: 1px solid var(--sh-border);
+    border-left: 3px solid var(--sh-info);
+    border-radius: 12px;
+    background: var(--sh-info-bg);
+}
+
+#app .reports-page .scope-note-icon {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border-radius: 11px;
+    background: var(--sh-surface);
+    color: var(--sh-info);
+}
+
+#app .reports-page .scope-note-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+#app .reports-page .report-scope-note strong {
+    color: var(--sh-text);
+    font-size: 13px;
+    font-weight: 750;
+}
+
+#app .reports-page .report-scope-note p {
+    margin: 5px 0 0;
+    color: var(--sh-text-2);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+#app .reports-page .reports-error {
+    gap: 13px;
+    margin: 0;
+    padding: 15px 18px;
+    font-size: 12px;
+}
+
+#app .reports-page .reports-error-copy strong {
+    font-size: 13px;
+}
+
+#app .reports-page .reports-error-copy p {
+    margin: 5px 0 0;
+    color: var(--sh-text-2);
+    font-size: 12px;
+}
+
+#app .reports-page .reports-error .retry-button {
+    min-height: 38px;
+    padding: 0 13px;
+    font-size: 12px;
+}
+
+#app .reports-page .reports-loading-card {
+    min-height: 280px;
+    padding: 34px 22px;
+}
+
+#app .reports-page .reports-loading-card h3 {
+    color: var(--sh-text);
+    font-size: 16px;
+    font-weight: 750;
+}
+
+#app .reports-page .reports-loading-card p {
+    color: var(--sh-text-3);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+/* Section titles and small period badges */
+#app .reports-page .report-section-heading {
+    margin: 7px 0 -2px;
+    gap: 20px;
+    align-items: flex-end;
+}
+
+#app .reports-page .report-section-heading h3 {
+    margin: 0;
+    color: var(--sh-text);
+    font-size: 20px;
+    font-weight: 750;
+    line-height: 1.3;
+    letter-spacing: -0.45px;
+}
+
+#app .reports-page .report-section-heading p:last-child {
+    margin: 6px 0 0;
+    color: var(--sh-text-3);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+#app .reports-page .report-section-heading p strong {
+    color: var(--sh-text-2);
+    font-weight: 700;
+}
+
+#app .reports-page .section-period-badge {
+    min-height: 30px;
+    padding: 0 12px;
+    border: 1px solid var(--sh-border);
+    border-radius: 8px;
+    background: var(--sh-surface);
+    color: var(--sh-text-2);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* High-level KPIs */
+#app .reports-page .platform-state-grid,
+#app .reports-page .performance-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+#app .reports-page .platform-state-card,
+#app .reports-page .performance-card {
+    min-height: 146px;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 18px;
+    border: 1px solid var(--sh-border);
+    border-radius: var(--sh-radius-lg);
+    background: var(--sh-surface);
+    box-shadow: var(--sh-shadow-sm);
+}
+
+#app .reports-page .performance-card.highlight {
+    border-color: var(--sh-border);
+    background: var(--sh-surface);
+}
+
+#app .reports-page .state-card-icon,
+#app .reports-page .performance-icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 11px;
+}
+
+#app .reports-page .state-card-copy,
+#app .reports-page .performance-card > div:last-child {
+    min-width: 0;
+    flex: 1;
+    align-items: flex-start;
+}
+
+#app .reports-page .state-card-copy span,
+#app .reports-page .performance-card span {
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.45;
+}
+
+#app .reports-page .state-card-copy strong,
+#app .reports-page .performance-card strong {
+    margin-top: 12px;
+    color: var(--sh-text);
+    font-size: clamp(25px, 2.45vw, 31px);
+    font-weight: 780;
+    line-height: 1.15;
+    letter-spacing: -0.8px;
+}
+
+#app .reports-page .state-card-copy small,
+#app .reports-page .performance-card small {
+    margin-top: 7px;
+    color: var(--sh-text-3);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+/* General analytics panels */
+#app .reports-page .report-card,
+#app .reports-page .ranking-card {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--sh-border);
+    border-radius: var(--sh-radius-lg);
+    background: var(--sh-surface);
+    box-shadow: var(--sh-shadow-sm);
+}
+
+#app .reports-page .report-card-heading,
+#app .reports-page .ranking-heading {
+    min-height: 86px;
+    gap: 16px;
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--sh-border);
+}
+
+#app .reports-page .report-heading-main {
+    min-width: 0;
+    gap: 12px;
+}
+
+#app .reports-page .report-heading-icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 11px;
+}
+
+#app .reports-page .report-heading-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+#app .reports-page .report-heading-main h3 {
+    margin: 0;
+    color: var(--sh-text);
+    font-size: 16px;
+    font-weight: 750;
+    line-height: 1.3;
+}
+
+#app .reports-page .report-heading-main p:last-child {
+    margin: 5px 0 0;
+    color: var(--sh-text-3);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+#app .reports-page .shop-approval-overview,
+#app .reports-page .large-summary {
+    gap: 3px;
+    flex: 0 0 auto;
+}
+
+#app .reports-page .shop-approval-overview span,
+#app .reports-page .large-summary span {
+    color: var(--sh-text-3);
+    font-size: 11px;
+    font-weight: 650;
+}
+
+#app .reports-page .shop-approval-overview strong,
+#app .reports-page .large-summary strong {
+    font-size: 21px;
+    font-weight: 780;
+    line-height: 1.2;
+}
+
+/* Current shop availability and approvals */
+#app .reports-page .availability-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 13px;
+    padding: 22px;
+}
+
+#app .reports-page .availability-card {
+    min-height: 105px;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 16px;
+    border: 1px solid var(--sh-border);
+    border-radius: 12px;
+    background: var(--sh-surface-muted);
+}
+
+#app .reports-page .availability-icon {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 10px;
+}
+
+#app .reports-page .availability-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+#app .reports-page .availability-card > div:last-child {
+    min-width: 0;
+    gap: 6px;
+}
+
+#app .reports-page .availability-card span {
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.4;
+}
+
+#app .reports-page .availability-card strong {
+    color: var(--sh-text);
+    font-size: 23px;
+    font-weight: 780;
+    line-height: 1.2;
+}
+
+#app .reports-page .shop-approval-strip {
+    gap: 1px;
+    border-top: 1px solid var(--sh-border);
+    background: var(--sh-border);
+}
+
+#app .reports-page .shop-approval-strip > div {
+    min-height: 59px;
+    gap: 9px;
+    padding: 13px 21px;
+    background: var(--sh-surface-muted);
+}
+
+#app .reports-page .shop-approval-strip span:not(.approval-dot) {
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 650;
+}
+
+#app .reports-page .shop-approval-strip strong {
+    color: var(--sh-text);
+    font-size: 15px;
+    font-weight: 750;
+}
+
+/* Booking counts and appointment status distribution */
+#app .reports-page .booking-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+#app .reports-page .booking-total-card {
+    min-height: 138px;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 18px;
+    border: 1px solid var(--sh-border);
+    border-radius: var(--sh-radius-lg);
+    background: var(--sh-surface);
+    box-shadow: var(--sh-shadow-sm);
+}
+
+#app .reports-page .booking-total-icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 11px;
+}
+
+#app .reports-page .booking-total-card > div:last-child {
+    min-width: 0;
+    flex: 1;
+}
+
+#app .reports-page .booking-total-card span {
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.45;
+}
+
+#app .reports-page .booking-total-card strong {
+    margin-top: 12px;
+    color: var(--sh-text);
+    font-size: 29px;
+    font-weight: 780;
+    line-height: 1.15;
+    letter-spacing: -0.8px;
+}
+
+#app .reports-page .booking-total-card small {
+    margin-top: 7px;
+    color: var(--sh-text-3);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+#app .reports-page .appointment-outcome-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+    padding: 22px;
+}
+
+#app .reports-page .outcome-card {
+    min-height: 99px;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 11px;
+}
+
+#app .reports-page .outcome-card span {
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+#app .reports-page .outcome-card strong {
+    color: var(--sh-text);
+    font-size: 24px;
+    font-weight: 780;
+    line-height: 1.15;
+}
+
+/* Rankings and report tables */
+#app .reports-page .reports-ranking-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    margin: 0;
+}
+
+#app .reports-page .ranking-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+#app .reports-page .ranking-table-wrap table {
+    min-width: 920px;
+}
+
+#app .reports-page .ranking-table-wrap th {
+    padding: 15px 17px;
+    border-bottom: 1px solid var(--sh-border);
+    background: var(--sh-surface-muted);
+    color: var(--sh-text-3);
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0.045em;
+}
+
+#app .reports-page .ranking-table-wrap td {
+    padding: 17px;
+    border-bottom: 1px solid var(--sh-border);
+    color: var(--sh-text-2);
+    font-size: 12px;
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+#app .reports-page .ranking-table-wrap tbody tr:hover {
+    background: var(--sh-surface-muted);
+}
+
+#app .reports-page .rank {
+    width: 31px;
+    height: 31px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 750;
+}
+
+#app .reports-page .rank.top {
+    color: var(--sh-warning);
+}
+
+#app .reports-page .shop-rank-icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border-radius: 9px;
+}
+
+#app .reports-page .shop-rank-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+#app .reports-page .entity-link {
+    min-height: 34px;
+    gap: 9px;
+    color: var(--sh-text);
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 1.45;
+}
+
+#app .reports-page .entity-link:hover {
+    color: var(--sh-accent);
+}
+
+#app .reports-page .entity-link.compact {
+    color: var(--sh-info);
+    font-size: 12px;
+}
+
+#app .reports-page .service-cell {
+    gap: 4px;
+}
+
+#app .reports-page .service-cell strong {
+    color: var(--sh-text);
+    font-size: 12px;
+    font-weight: 750;
+}
+
+#app .reports-page .service-cell span {
+    color: var(--sh-text-3);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+#app .reports-page .positive-value {
+    color: var(--sh-success);
+    font-weight: 750;
+}
+
+#app .reports-page .rate-value {
+    color: var(--sh-text-2);
+    font-weight: 700;
+}
+
+#app .reports-page .rate-value.warning {
+    color: var(--sh-warning);
+}
+
+#app .reports-page .revenue {
+    color: var(--sh-success) !important;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+#app .reports-page .report-empty-state {
+    min-height: 225px;
+    padding: 35px 20px;
+}
+
+#app .reports-page .report-empty-state h3 {
+    color: var(--sh-text);
+    font-size: 15px;
+    font-weight: 750;
+}
+
+#app .reports-page .report-empty-state p {
+    color: var(--sh-text-3);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* Feedback distribution and reschedule statistics */
+#app .reports-page .reports-lower-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    margin: 0;
+}
+
+#app .reports-page .feedback-summary {
+    gap: 13px;
+    margin: 20px 22px;
+}
+
+#app .reports-page .feedback-summary-card {
+    padding: 16px 18px;
+    border-radius: 11px;
+}
+
+#app .reports-page .feedback-summary-label {
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+#app .reports-page .feedback-summary-card > strong,
+#app .reports-page .feedback-rating-line strong {
+    margin-top: 9px;
+    color: var(--sh-text);
+    font-size: 28px;
+    font-weight: 780;
+    line-height: 1.2;
+}
+
+#app .reports-page .feedback-summary-card small {
+    margin-top: 7px;
+    color: var(--sh-text-3);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+#app .reports-page .feedback-rating-line {
+    gap: 8px;
+}
+
+#app .reports-page .feedback-rating-line span {
+    color: var(--sh-accent);
+    font-size: 19px;
+}
+
+#app .reports-page .rating-list {
+    gap: 13px;
+    padding: 0 22px 22px;
+}
+
+#app .reports-page .rating-row {
+    grid-template-columns: 48px minmax(0, 1fr) 42px;
+    gap: 10px;
+    align-items: center;
+}
+
+#app .reports-page .rating-label,
+#app .reports-page .rating-row > strong {
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+#app .reports-page .rating-track {
+    height: 9px;
+    border-radius: 999px;
+}
+
+#app .reports-page .reschedule-list {
+    padding: 6px 22px;
+}
+
+#app .reports-page .reschedule-row {
+    min-height: 61px;
+    padding: 12px 0;
+    gap: 15px;
+}
+
+#app .reports-page .reschedule-row > div {
+    gap: 10px;
+}
+
+#app .reports-page .reschedule-row span:not(.reschedule-dot) {
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+#app .reports-page .reschedule-row strong {
+    color: var(--sh-text);
+    font-size: 16px;
+    font-weight: 750;
+}
+
+#app .reports-page .reschedule-note {
+    gap: 9px;
+    margin: 10px 22px 22px;
+    padding: 13px;
+    border-radius: 10px;
+    background: var(--sh-surface-muted);
+    color: var(--sh-text-3);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+#app .reports-page .reschedule-note svg {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
+}
+
+/* Responsive layouts */
+@media (max-width: 1300px) {
+    #app .reports-page .reports-period-card {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    #app .reports-page .reports-period-filters {
+        justify-content: flex-start;
+    }
+
+    #app .reports-page .platform-state-grid,
+    #app .reports-page .performance-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #app .reports-page .appointment-outcome-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1000px) {
+    #app .reports-page .reports-intro {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    #app .reports-page .reports-intro-right {
+        width: 100%;
+        align-items: flex-start;
+    }
+
+    #app .reports-page .report-period-display {
+        max-width: 100%;
+    }
+
+    #app .reports-page .availability-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #app .reports-page .booking-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #app .reports-page .reports-lower-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 740px) {
+    #app .reports-page .reports-period-filters {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    #app .reports-page .period-field input {
+        width: 100%;
+    }
+
+    #app .reports-page .platform-state-grid,
+    #app .reports-page .performance-grid,
+    #app .reports-page .booking-summary-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    #app .reports-page .report-section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    #app .reports-page .appointment-outcome-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 580px) {
+    #app .reports-page {
+        gap: 18px;
+    }
+
+    #app .reports-page .reports-intro h2 {
+        font-size: 26px;
+    }
+
+    #app .reports-page .report-period-display {
+        width: 100%;
+    }
+
+    #app .reports-page .reports-period-card {
+        padding: 16px;
+    }
+
+    #app .reports-page .period-card-heading {
+        min-width: 0;
+    }
+
+    #app .reports-page .reports-period-filters {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    #app .reports-page .reports-period-filters button {
+        width: 100%;
+    }
+
+    #app .reports-page .report-scope-note {
+        align-items: flex-start;
+    }
+
+    #app .reports-page .report-card-heading,
+    #app .reports-page .ranking-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 17px 16px;
+    }
+
+    #app .reports-page .shop-approval-overview,
+    #app .reports-page .large-summary {
+        align-items: flex-start;
+    }
+
+    #app .reports-page .availability-grid,
+    #app .reports-page .appointment-outcome-grid {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 16px;
+    }
+
+    #app .reports-page .shop-approval-strip {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    #app .reports-page .shop-approval-strip > div {
+        padding: 13px 16px;
+    }
+
+    #app .reports-page .feedback-summary {
+        grid-template-columns: minmax(0, 1fr);
+        margin: 16px;
+    }
+
+    #app .reports-page .rating-list {
+        padding: 0 16px 16px;
+    }
+
+    #app .reports-page .reschedule-list {
+        padding: 6px 16px;
+    }
+
+    #app .reports-page .reschedule-note {
+        margin: 10px 16px 16px;
+    }
+
+    #app .reports-page .reports-error {
+        flex-wrap: wrap;
+    }
+
+    #app .reports-page .reports-error .retry-button {
+        width: 100%;
+    }
+}

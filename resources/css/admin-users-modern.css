@@ -1,0 +1,748 @@
+/*
+ * STYLEHUB ADMIN — USERS PAGE
+ *
+ * Professional minimalist visual refresh.
+ * All existing functionality remains unchanged.
+ * Colors use the existing StyleHub theme variables.
+ */
+
+/* =========================================
+   PAGE LAYOUT
+========================================= */
+
+#app .users-page {
+    gap: 24px;
+}
+
+/* =========================================
+   PAGE HEADER
+========================================= */
+
+#app .users-page .users-intro {
+    min-height: 0;
+    padding: 0;
+    align-items: flex-end;
+    gap: 24px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+#app .users-page .users-intro h2 {
+    margin: 0;
+    color: var(--sh-text);
+    font-size: clamp(27px, 2.5vw, 33px);
+    font-weight: 750;
+    line-height: 1.2;
+    letter-spacing: -0.9px;
+}
+
+#app .users-page .users-intro p {
+    max-width: 670px;
+    margin: 8px 0 0;
+    color: var(--sh-text-3);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+#app .users-page .users-intro-actions {
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 11px;
+}
+
+/* =========================================
+   TOTAL USERS INDICATOR
+========================================= */
+
+#app .users-page .users-total-card {
+    min-width: 155px;
+    gap: 10px;
+    padding: 9px 12px;
+    border: 1px solid var(--sh-border);
+    border-radius: 11px;
+    background: var(--sh-surface);
+}
+
+#app .users-page .users-total-icon {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    border-radius: 10px;
+}
+
+#app .users-page .users-total-card span {
+    color: var(--sh-text-3);
+    font-size: 11px;
+    font-weight: 650;
+}
+
+#app .users-page .users-total-card strong {
+    color: var(--sh-text);
+    font-size: 18px;
+    line-height: 1.2;
+}
+
+#app .users-page .users-refresh-button {
+    min-height: 43px;
+    padding: 0 16px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* =========================================
+   SUMMARY STATISTIC CARDS
+========================================= */
+
+#app .users-page .user-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 16px;
+}
+
+#app .users-page .user-summary-card {
+    min-height: 148px;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 18px;
+    border: 1px solid var(--sh-border);
+    border-radius: var(--sh-radius-lg);
+    background: var(--sh-surface);
+    box-shadow: var(--sh-shadow-sm);
+    transform: none;
+}
+
+#app .users-page .user-summary-card:hover {
+    transform: none;
+    box-shadow: var(--sh-shadow-sm);
+}
+
+#app .users-page .user-summary-icon {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    border-radius: 11px;
+}
+
+#app .users-page .user-summary-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+#app .users-page .user-summary-content {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+}
+
+#app .users-page .user-summary-content span {
+    max-width: 100%;
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.5;
+    white-space: normal;
+}
+
+#app .users-page .user-summary-content strong {
+    margin-top: 13px;
+    color: var(--sh-text);
+    font-size: clamp(25px, 2.5vw, 31px);
+    font-weight: 780;
+    letter-spacing: -0.8px;
+    line-height: 1.1;
+}
+
+#app .users-page .user-summary-content small {
+    margin-top: 8px;
+    color: var(--sh-text-3);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+/* =========================================
+   FILTER PANEL
+========================================= */
+
+#app .users-page .users-filter-card {
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--sh-border);
+    border-radius: var(--sh-radius-lg);
+    background: var(--sh-surface);
+    box-shadow: var(--sh-shadow-sm);
+}
+
+#app .users-page .filter-card-heading {
+    min-height: 77px;
+    gap: 14px;
+    padding: 18px 21px;
+    border-bottom: 1px solid var(--sh-border);
+}
+
+#app .users-page .filter-heading-left {
+    gap: 12px;
+}
+
+#app .users-page .filter-heading-icon {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    border-radius: 11px;
+    background: var(--sh-surface-muted);
+    color: var(--sh-text-2);
+}
+
+#app .users-page .filter-heading-left h3 {
+    color: var(--sh-text);
+    font-size: 16px;
+    font-weight: 750;
+    line-height: 1.3;
+}
+
+#app .users-page .filter-heading-left p {
+    margin: 4px 0 0;
+    color: var(--sh-text-3);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+#app .users-page .active-filter-count {
+    min-height: 27px;
+    padding: 0 10px;
+    border: 1px solid var(--sh-border);
+    border-radius: 8px;
+    background: var(--sh-accent-soft);
+    color: var(--sh-warning);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* =========================================
+   FILTER FORM
+========================================= */
+
+#app .users-page .users-filters {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1.7fr)
+        repeat(2, minmax(0, 1fr))
+        auto;
+    align-items: end;
+    gap: 15px;
+    padding: 21px;
+}
+
+#app .users-page .users-filters .search-field label,
+#app .users-page .users-filters .filter-field label {
+    margin-bottom: 8px;
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+#app .users-page .users-filters input,
+#app .users-page .users-filters select {
+    width: 100%;
+    min-height: 43px;
+    border: 1px solid var(--sh-border-strong);
+    border-radius: 10px;
+    background: var(--sh-surface);
+    color: var(--sh-text);
+    font-size: 13px;
+}
+
+#app .users-page .users-filters input::placeholder {
+    color: var(--sh-text-3);
+}
+
+#app .users-page .users-filters input:focus,
+#app .users-page .users-filters select:focus {
+    border-color: var(--sh-accent);
+    outline: 2px solid var(--sh-accent-soft);
+    outline-offset: 0;
+}
+
+#app .users-page .users-filter-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 10px;
+}
+
+#app .users-page .users-filter-actions button {
+    min-height: 43px;
+    padding: 0 16px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* =========================================
+   USER DIRECTORY PANEL
+========================================= */
+
+#app .users-page .users-card {
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--sh-border);
+    border-radius: var(--sh-radius-lg);
+    background: var(--sh-surface);
+    box-shadow: var(--sh-shadow-sm);
+}
+
+#app .users-page .users-table-header {
+    min-height: 83px;
+    padding: 19px 22px;
+    border-bottom: 1px solid var(--sh-border);
+}
+
+#app .users-page .table-heading {
+    gap: 12px;
+}
+
+#app .users-page .table-heading-icon {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    border-radius: 11px;
+}
+
+#app .users-page .table-heading h3 {
+    margin: 0;
+    color: var(--sh-text);
+    font-size: 17px;
+    font-weight: 750;
+    line-height: 1.3;
+}
+
+#app .users-page .table-heading p {
+    margin: 4px 0 0;
+    color: var(--sh-text-3);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+#app .users-page .table-header-actions,
+#app .users-page .per-page {
+    gap: 11px;
+}
+
+#app .users-page .per-page label,
+#app .users-page .table-filter-status {
+    color: var(--sh-text-3);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+#app .users-page .per-page select {
+    width: 76px;
+    min-height: 38px;
+    padding: 6px 10px;
+    border: 1px solid var(--sh-border-strong);
+    border-radius: 9px;
+    background: var(--sh-surface);
+    color: var(--sh-text-2);
+    font-size: 12px;
+}
+
+/* =========================================
+   USERS TABLE
+========================================= */
+
+#app .users-page .users-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+#app .users-page .users-table-wrapper table {
+    min-width: 1180px;
+}
+
+#app .users-page .users-table-wrapper th {
+    padding: 15px 16px;
+    border-bottom: 1px solid var(--sh-border);
+    background: var(--sh-surface-muted);
+    color: var(--sh-text-3);
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0.045em;
+}
+
+#app .users-page .users-table-wrapper td {
+    padding: 17px 16px;
+    border-bottom: 1px solid var(--sh-border);
+    color: var(--sh-text-2);
+    font-size: 12px;
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+#app .users-page .user-table-row:hover {
+    background: var(--sh-surface-muted);
+}
+
+/* =========================================
+   USER INFORMATION
+========================================= */
+
+#app .users-page .user-avatar {
+    width: 41px;
+    height: 41px;
+    flex-basis: 41px;
+    border-radius: 11px;
+    font-size: 15px;
+}
+
+#app .users-page .user-primary-copy strong,
+#app .users-page .contact-cell strong,
+#app .users-page .user-shop-cell strong {
+    color: var(--sh-text);
+    font-size: 13px;
+    font-weight: 750;
+}
+
+#app .users-page .user-email,
+#app .users-page .contact-cell > span,
+#app .users-page .user-shop-cell > div span {
+    color: var(--sh-text-3);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+#app .users-page .user-id {
+    padding: 3px 6px;
+    border-radius: 5px;
+    background: var(--sh-surface-muted);
+    color: var(--sh-text-3) !important;
+    font-size: 10px !important;
+    font-weight: 600;
+}
+
+/* =========================================
+   ACCOUNT STATUS AND ROLE BADGES
+========================================= */
+
+#app .users-page .user-role-badge,
+#app .users-page .user-status-badge {
+    min-height: 27px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* =========================================
+   EMAIL VERIFICATION
+========================================= */
+
+#app .users-page .verification-state {
+    font-size: 11px !important;
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+#app .users-page .verification-state svg {
+    width: 13px;
+    height: 13px;
+    flex-basis: 13px;
+}
+
+/* =========================================
+   LINKED SHOP INFORMATION
+========================================= */
+
+#app .users-page .mini-shop-icon {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+    border-radius: 9px;
+}
+
+/* =========================================
+   APPOINTMENT COUNTS
+========================================= */
+
+#app .users-page .appointment-count strong {
+    color: var(--sh-text);
+    font-size: 12px;
+    font-weight: 750;
+}
+
+/* =========================================
+   VIEW BUTTON
+========================================= */
+
+#app .users-page .user-view-button {
+    min-height: 36px;
+    padding: 0 13px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* =========================================
+   ERROR STATE
+========================================= */
+
+#app .users-page .users-error {
+    margin: 0;
+}
+
+#app .users-page .users-error-copy strong {
+    color: var(--sh-danger);
+    font-size: 13px;
+}
+
+#app .users-page .users-error-copy p {
+    color: var(--sh-text-2);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* =========================================
+   LOADING AND EMPTY STATES
+========================================= */
+
+#app .users-page .users-loading-state h3,
+#app .users-page .users-empty-state h3 {
+    color: var(--sh-text);
+    font-size: 15px;
+}
+
+#app .users-page .users-loading-state p,
+#app .users-page .users-empty-state p {
+    color: var(--sh-text-3);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* =========================================
+   PAGINATION
+========================================= */
+
+#app .users-page .users-pagination {
+    min-height: 72px;
+    gap: 16px;
+    padding: 16px 22px;
+    border-top: 1px solid var(--sh-border);
+    background: var(--sh-surface);
+}
+
+#app .users-page .pagination-summary,
+#app .users-page .pagination-summary span {
+    color: var(--sh-text-3);
+    font-size: 12px;
+}
+
+#app .users-page .pagination-summary strong {
+    color: var(--sh-text-2);
+    font-size: 12px;
+    font-weight: 750;
+}
+
+#app .users-page .pagination-buttons {
+    gap: 7px;
+}
+
+#app .users-page .page-button {
+    min-width: 37px;
+    min-height: 37px;
+    padding: 0 11px;
+    border-radius: 9px;
+    font-size: 12px;
+}
+
+/* =========================================
+   RESPONSIVE — MEDIUM DESKTOP
+========================================= */
+
+@media (max-width: 1450px) {
+    #app .users-page .user-summary-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    #app .users-page .user-summary-card {
+        grid-column: span 2;
+    }
+
+    #app .users-page .user-summary-card:nth-child(4),
+    #app .users-page .user-summary-card:nth-child(5) {
+        grid-column: span 3;
+    }
+}
+
+/* =========================================
+   RESPONSIVE — TABLET
+========================================= */
+
+@media (max-width: 1350px) {
+    #app .users-page .users-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #app .users-page .users-filters .search-field {
+        grid-column: 1 / -1;
+    }
+
+    #app .users-page .users-filter-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 1000px) {
+    #app .users-page .users-intro {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    #app .users-page .users-intro-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+/* =========================================
+   RESPONSIVE — SMALL TABLET
+========================================= */
+
+@media (max-width: 760px) {
+    #app .users-page .user-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 11px;
+    }
+
+    #app .users-page .user-summary-card,
+    #app .users-page .user-summary-card:nth-child(4),
+    #app .users-page .user-summary-card:nth-child(5) {
+        grid-column: auto;
+    }
+
+    #app .users-page .verification-summary {
+        grid-column: 1 / -1 !important;
+    }
+
+    #app .users-page .users-table-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    #app .users-page .table-header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+/* =========================================
+   RESPONSIVE — MOBILE
+========================================= */
+
+@media (max-width: 680px) {
+    #app .users-page {
+        gap: 18px;
+    }
+
+    #app .users-page .users-intro h2 {
+        font-size: 25px;
+    }
+
+    #app .users-page .users-intro-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    #app .users-page .users-total-card,
+    #app .users-page .users-refresh-button {
+        width: 100%;
+    }
+
+    #app .users-page .user-summary-card {
+        min-height: 130px;
+        padding: 15px;
+    }
+
+    #app .users-page .user-summary-icon {
+        width: 34px;
+        height: 34px;
+        flex-basis: 34px;
+    }
+
+    #app .users-page .user-summary-icon svg {
+        width: 17px;
+        height: 17px;
+    }
+
+    #app .users-page .user-summary-content strong {
+        font-size: 25px;
+    }
+
+    #app .users-page .filter-card-heading,
+    #app .users-page .users-table-header {
+        padding: 17px;
+    }
+
+    #app .users-page .users-filters {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+        padding: 17px;
+    }
+
+    #app .users-page .users-filters .search-field,
+    #app .users-page .users-filter-actions {
+        grid-column: 1;
+    }
+
+    #app .users-page .users-filter-actions {
+        flex-direction: row;
+        align-items: stretch;
+        justify-content: stretch;
+        width: 100%;
+    }
+
+    #app .users-page .users-filter-actions button {
+        flex: 1;
+        width: auto;
+    }
+
+    #app .users-page .users-pagination {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 16px 17px;
+    }
+
+    #app .users-page .pagination-buttons {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+}
+
+/* =========================================
+   RESPONSIVE — SMALL PHONES
+========================================= */
+
+@media (max-width: 380px) {
+    #app .users-page .user-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    #app .users-page .verification-summary {
+        grid-column: auto !important;
+    }
+
+    #app .users-page .users-filter-actions {
+        flex-direction: column;
+    }
+}

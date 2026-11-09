@@ -1,41 +1,78 @@
 <script setup>
 import {
     computed,
+    nextTick,
     ref,
 } from 'vue';
 
-import {
-    useRoute,
-} from 'vue-router';
+import { useRoute } from 'vue-router';
 
 import AdminHeader from '../components/AdminHeader.vue';
 import AdminSidebar from '../components/AdminSidebar.vue';
 
 const route = useRoute();
 
-const sidebarOpen =
-    ref(false);
+const sidebarOpen = ref(false);
 
-const pageTitle =
-    computed(
-        () =>
-            route.meta.title
-            ?? 'Administrator',
-    );
+const pageTitle = computed(
+    () => route.meta.title ?? 'Administrator',
+);
+
+/*
+|--------------------------------------------------------------------------
+| SIDEBAR
+|--------------------------------------------------------------------------
+*/
 
 function toggleSidebar() {
-    sidebarOpen.value =
-        !sidebarOpen.value;
+    sidebarOpen.value = !sidebarOpen.value;
 }
 
 function closeSidebar() {
-    sidebarOpen.value =
-        false;
+    sidebarOpen.value = false;
+}
+
+/*
+|--------------------------------------------------------------------------
+| RESET SCROLL POSITION
+|--------------------------------------------------------------------------
+|
+| Runs when Suspense finishes loading the new page.
+|
+| The newly opened page always starts at the top.
+| This applies to all Administrator pages.
+|
+*/
+
+async function resetScrollPosition() {
+    await nextTick();
+
+    requestAnimationFrame(() => {
+        window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: 'instant',
+        });
+
+        const scrollContainers = [
+            document.querySelector('.content-area'),
+            document.querySelector('.page-content'),
+            document.querySelector('.page-content-inner'),
+        ];
+
+        scrollContainers.forEach((element) => {
+            if (element) {
+                element.scrollTop = 0;
+                element.scrollLeft = 0;
+            }
+        });
+    });
 }
 </script>
 
 <template>
     <div class="admin-layout">
+
         <!-- ============================================================
              SIDEBAR
              ============================================================ -->
@@ -44,7 +81,6 @@ function closeSidebar() {
             :open="sidebarOpen"
             @close="closeSidebar"
         />
-
 
         <!-- ============================================================
              MOBILE SIDEBAR BACKDROP
@@ -60,7 +96,6 @@ function closeSidebar() {
             />
         </Transition>
 
-
         <!-- ============================================================
              ADMIN CONTENT
              ============================================================ -->
@@ -73,7 +108,45 @@ function closeSidebar() {
 
             <main class="page-content">
                 <div class="page-content-inner">
-                    <RouterView />
+
+                    <!-- =================================================
+                         ROUTER VIEW
+                         =================================================
+
+                         Suspense waits for the next page to load.
+
+                         The previous page remains visible while
+                         the next page retrieves its initial data.
+
+                         When the new page is ready, @resolve
+                         automatically resets scrolling to the top.
+
+                         ================================================= -->
+
+                    <RouterView
+                        v-slot="{
+                            Component,
+                            route: currentRoute,
+                        }"
+                    >
+                        <Suspense
+                            :timeout="-1"
+                            @resolve="resetScrollPosition"
+                        >
+                            <component
+                                :is="Component"
+                                :key="currentRoute.fullPath"
+                            />
+
+                            <template #fallback>
+                                <div
+                                    class="page-pending-space"
+                                    aria-hidden="true"
+                                ></div>
+                            </template>
+                        </Suspense>
+                    </RouterView>
+
                 </div>
             </main>
         </div>
@@ -100,10 +173,8 @@ function closeSidebar() {
             var(--sh-bg) 180px
         );
 
-    color:
-        var(--sh-text);
+    color: var(--sh-text);
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -117,14 +188,12 @@ function closeSidebar() {
     min-width: 0;
     min-height: 100vh;
 
-    margin-left:
-        282px;
+    margin-left: 282px;
 
     transition:
         margin-left
         0.2s ease;
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -146,15 +215,10 @@ function closeSidebar() {
         40px;
 }
 
-
 /*
 |--------------------------------------------------------------------------
 | CONTENT CONTAINER
 |--------------------------------------------------------------------------
-|
-| Keeps wide admin screens organized instead of stretching every card
-| from one side of a large monitor to the other.
-|
 */
 
 .page-content-inner {
@@ -166,6 +230,15 @@ function closeSidebar() {
         auto;
 }
 
+/*
+|--------------------------------------------------------------------------
+| PAGE TRANSITION PLACEHOLDER
+|--------------------------------------------------------------------------
+*/
+
+.page-pending-space {
+    min-height: 1px;
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -176,7 +249,6 @@ function closeSidebar() {
 .mobile-overlay {
     display: none;
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -196,7 +268,6 @@ function closeSidebar() {
     opacity: 0;
 }
 
-
 /*
 |--------------------------------------------------------------------------
 | LARGE DESKTOP
@@ -212,7 +283,6 @@ function closeSidebar() {
     }
 }
 
-
 /*
 |--------------------------------------------------------------------------
 | TABLET / SMALL DESKTOP
@@ -227,7 +297,6 @@ function closeSidebar() {
             36px;
     }
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -290,7 +359,6 @@ function closeSidebar() {
     }
 }
 
-
 /*
 |--------------------------------------------------------------------------
 | MOBILE
@@ -310,7 +378,6 @@ function closeSidebar() {
             30px;
     }
 }
-
 
 /*
 |--------------------------------------------------------------------------

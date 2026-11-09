@@ -1,11 +1,20 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700;800;900&display=swap');
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans:
+        'Roboto',
+        ui-sans-serif,
+        system-ui,
+        sans-serif,
+        'Apple Color Emoji',
+        'Segoe UI Emoji',
+        'Segoe UI Symbol',
+        'Noto Color Emoji';
 }
 
 /*
@@ -13,12 +22,22 @@
 | STYLEHUB ADMIN DESIGN SYSTEM
 |--------------------------------------------------------------------------
 |
-| Shared design tokens for the StyleHub web administrator dashboard.
-| The existing StyleHub dark navy + gold theme is preserved.
+| Shared design tokens for the StyleHub
+| web administrator dashboard.
+|
+| The existing StyleHub dark navy
+| and gold theme is preserved.
 |
 */
 
+/*
+|--------------------------------------------------------------------------
+| ROOT VARIABLES
+|--------------------------------------------------------------------------
+*/
+
 :root {
+
     /*
     |--------------------------------------------------------------------------
     | Brand
@@ -26,11 +45,15 @@
     */
 
     --sh-primary: #17202a;
+
     --sh-primary-2: #222d3a;
+
     --sh-primary-3: #344254;
 
     --sh-accent: #d69a2d;
+
     --sh-accent-soft: #fff6e5;
+
 
     /*
     |--------------------------------------------------------------------------
@@ -44,6 +67,7 @@
 
     --sh-surface-muted: #f8fafc;
 
+
     /*
     |--------------------------------------------------------------------------
     | Borders
@@ -53,6 +77,7 @@
     --sh-border: #e3e8ef;
 
     --sh-border-strong: #d7dee7;
+
 
     /*
     |--------------------------------------------------------------------------
@@ -66,6 +91,7 @@
 
     --sh-text-3: #7b8491;
 
+
     /*
     |--------------------------------------------------------------------------
     | Status Colors
@@ -73,19 +99,25 @@
     */
 
     --sh-success: #287558;
+
     --sh-success-bg: #edf9f3;
 
     --sh-warning: #9a671f;
+
     --sh-warning-bg: #fff6e5;
 
     --sh-danger: #a94f4f;
+
     --sh-danger-bg: #fff0f0;
 
     --sh-info: #315fc4;
+
     --sh-info-bg: #eef4ff;
 
     --sh-purple: #7555c7;
+
     --sh-purple-bg: #f3efff;
+
 
     /*
     |--------------------------------------------------------------------------
@@ -100,6 +132,7 @@
     --sh-radius-lg: 16px;
 
     --sh-radius-xl: 20px;
+
 
     /*
     |--------------------------------------------------------------------------
@@ -116,6 +149,7 @@
 
     --sh-shadow-float:
         0 20px 55px rgba(15, 23, 42, 0.16);
+
 }
 
 
@@ -128,16 +162,23 @@
 html,
 body,
 #app {
+
     min-width: 100%;
+
     min-height: 100%;
+
     margin: 0;
+
 }
 
 html {
+
     background: var(--sh-bg);
+
 }
 
 body {
+
     margin: 0;
 
     background:
@@ -146,8 +187,18 @@ body {
     color:
         var(--sh-text);
 
+    /*
+    |--------------------------------------------------------------------------
+    | GLOBAL ROBOTO FONT
+    |--------------------------------------------------------------------------
+    |
+    | Roboto is the default font for
+    | the entire administrator website.
+    |
+    */
+
     font-family:
-        'Instrument Sans',
+        'Roboto',
         ui-sans-serif,
         system-ui,
         -apple-system,
@@ -157,9 +208,12 @@ body {
 
     font-size: 14px;
 
+    font-weight: 400;
+
     -webkit-font-smoothing: antialiased;
 
     text-rendering: optimizeLegibility;
+
 }
 
 
@@ -167,13 +221,19 @@ body {
 |--------------------------------------------------------------------------
 | FORM / CONTROL FONT
 |--------------------------------------------------------------------------
+|
+| Buttons, text fields, dropdowns,
+| and text areas inherit Roboto.
+|
 */
 
 button,
 input,
 select,
 textarea {
+
     font: inherit;
+
 }
 
 
@@ -188,7 +248,9 @@ a,
 input,
 select,
 textarea {
+
     -webkit-tap-highlight-color: transparent;
+
 }
 
 
@@ -203,11 +265,13 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
+
     outline:
         2px solid rgba(214, 154, 45, 0.42);
 
     outline-offset:
         2px;
+
 }
 
 
@@ -218,6 +282,8 @@ textarea:focus-visible {
 */
 
 ::selection {
+
     background:
         rgba(214, 154, 45, 0.22);
+
 }
